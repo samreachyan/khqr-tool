@@ -43,7 +43,7 @@ public class MainKHQRApplication extends Application {
 
     @Override
     public void start(Stage primaryStage) {
-        primaryStage.setTitle("QR Code Generator and Decoder");
+        primaryStage.setTitle("QR Code Generator and Decoder - FTB Samreach");
 
         // Left box: Input fields and buttons
         GridPane inputGrid = new GridPane();
@@ -201,40 +201,76 @@ public class MainKHQRApplication extends Application {
 
         // Add functionality to the buttons (this is a placeholder, actual QR generation/decoding logic is needed)
         generateQRButton.setOnAction(e -> {
-            // Generate QR code logic here
-            // For demonstration, we'll just update the label
-            IndividualInfo individualInfo = new IndividualInfo();
-            individualInfo.setAccountInformation(accountInformationInput.getText());
-            individualInfo.setAcquiringBank(acquiringBankInput.getText());
-            individualInfo.setBakongAccountId(bakongAccountIDInput.getText());
-            individualInfo.setCurrency(transactionCurrencyInput.getValue().equalsIgnoreCase("116") ? KHQRCurrency.KHR : KHQRCurrency.USD);
-            individualInfo.setMerchantName(merchantNameInput.getText());
-            individualInfo.setMerchantCity(merchantCityInput.getText());
+            if (merchantTypeInput.getText().equalsIgnoreCase("29")) {
+                // Generate QR code logic here
+                // For demonstration, we'll just update the label
+                IndividualInfo individualInfo = new IndividualInfo();
+                individualInfo.setAccountInformation(accountInformationInput.getText());
+                individualInfo.setAcquiringBank(acquiringBankInput.getText());
+                individualInfo.setBakongAccountId(bakongAccountIDInput.getText());
+                individualInfo.setCurrency(transactionCurrencyInput.getValue().equalsIgnoreCase("116") ? KHQRCurrency.KHR : KHQRCurrency.USD);
+                individualInfo.setMerchantName(merchantNameInput.getText());
+                individualInfo.setMerchantCity(merchantCityInput.getText());
 
-            if (StringUtils.isNotBlank(mobileNumberInput.getText())) individualInfo.setMobileNumber(mobileNumberInput.getText());
-            if (StringUtils.isNotBlank(transactionAmountInput.getText())) individualInfo.setAmount(Double.valueOf(transactionAmountInput.getText()));
-            if (StringUtils.isNotBlank(billNumberInput.getText())) individualInfo.setBillNumber(billNumberInput.getText());
+                if (StringUtils.isNotBlank(mobileNumberInput.getText()))
+                    individualInfo.setMobileNumber(mobileNumberInput.getText());
+                if (StringUtils.isNotBlank(transactionAmountInput.getText()))
+                    individualInfo.setAmount(Double.valueOf(transactionAmountInput.getText()));
+                if (StringUtils.isNotBlank(billNumberInput.getText()))
+                    individualInfo.setBillNumber(billNumberInput.getText());
 
-            try {
                 KHQRResponse<KHQRData> khqrResponse = BakongKHQR.generateIndividual(individualInfo);
-                if (khqrResponse.getKHQRStatus().getCode() == 0) {
-                    String qrCode = khqrResponse.getData().getQr();
 
-                    System.out.println("Generated KHQR: " + qrCode);
-                    qrStringLabel.setText("Generated KHQR Image");
-                    qrCodeInput.setText(qrCode);
+                System.out.println(khqrResponse);
+                System.out.println(khqrResponse.getData());
+                String qrCode = khqrResponse.getData().getQr();
+                System.out.println("Generated KHQR: " + qrCode);
 
-                    // Update the ImageView with the generated QR image
+                qrStringLabel.setText("Generated KHQR Image");
+                qrCodeInput.setText(qrCode);
+                // Update the ImageView with the generated QR image
+
+                try {
                     Image qrImage = generateQRCodeImage(qrCode, 400, 400);
                     qrImageView.setImage(qrImage);
-                } else {
-                    qrImageView.setImage(null);
-                    qrCodeInput.setText(null);
-                    qrStringLabel.setText(khqrResponse.getKHQRStatus().getMessage());
+                } catch (WriterException | IOException ex) {
+                    ex.printStackTrace();
                 }
-            } catch (WriterException | IOException ex) {
-                ex.printStackTrace();
-                qrStringLabel.setText(ex.getMessage());
+            } else {
+                // Generate QR code logic here
+                // For demonstration, we'll just update the label
+                MerchantInfo merchantInfo = new MerchantInfo();
+                merchantInfo.setBakongAccountId(bakongAccountIDInput.getText());
+                merchantInfo.setAcquiringBank(acquiringBankInput.getText());
+                merchantInfo.setMerchantId(merchantIdInput.getText());
+                merchantInfo.setMerchantName(merchantNameInput.getText());
+                merchantInfo.setMerchantCity(merchantTypeInput.getText());
+                merchantInfo.setCurrency(transactionCurrencyInput.getValue().equalsIgnoreCase("116") ? KHQRCurrency.KHR : KHQRCurrency.USD);
+
+                if (StringUtils.isNotBlank(terminalLabelInput.getText())) merchantInfo.setTerminalLabel(terminalLabelInput.getText());
+                if (StringUtils.isNotBlank(storeLabelInput.getText())) merchantInfo.setStoreLabel(storeLabelInput.getText());
+                if (StringUtils.isNotBlank(transactionAmountInput.getText())) merchantInfo.setAmount(Double.valueOf(transactionAmountInput.getText()));
+                if (StringUtils.isNotBlank(mobileNumberInput.getText())) merchantInfo.setMobileNumber(mobileNumberInput.getText());
+                if (StringUtils.isNotBlank(billNumberInput.getText())) merchantInfo.setBillNumber(billNumberInput.getText());
+
+                KHQRResponse<KHQRData> khqrResponse = BakongKHQR.generateMerchant(merchantInfo);
+                String qrCode = khqrResponse.getData().getQr();
+
+
+                System.out.println(khqrResponse);
+                System.out.println(khqrResponse.getData());
+                System.out.println("Generated KHQR: " + qrCode);
+
+                qrStringLabel.setText("Generated KHQR Image");
+                qrCodeInput.setText(qrCode);
+                // Update the ImageView with the generated QR image
+
+                try {
+                    Image qrImage = generateQRCodeImage(qrCode, 400, 400);
+                    qrImageView.setImage(qrImage);
+                } catch (WriterException | IOException ex) {
+                    ex.printStackTrace();
+                }
             }
             // qrImageView.setImage(generatedQRImage);
         });
@@ -271,6 +307,8 @@ public class MainKHQRApplication extends Application {
                         KHQRResponse<CRCValidation> valid = BakongKHQR.verify(qrCodeStr);
 
                         System.out.println(decode.getData());
+                        System.out.println(valid);
+                        System.out.println(decode.getKHQRStatus());
 
                         if (valid.getKHQRStatus().getCode() == 0) {
                             System.out.println("QR Code is valid");
@@ -304,7 +342,6 @@ public class MainKHQRApplication extends Application {
 
                 } catch (Exception exception) {
                     System.err.println("There is no QR code in the image: " + exception);
-                    qrStringLabel.setText(exception.getMessage());
                 }
 
             }
@@ -321,6 +358,8 @@ public class MainKHQRApplication extends Application {
                 KHQRResponse<KHQRDecodeData> decode = BakongKHQR.decode(qrCodeStr);
                 KHQRResponse<CRCValidation> valid = BakongKHQR.verify(qrCodeStr);
 
+                System.out.println(valid);
+                System.out.println(decode.getKHQRStatus());
                 System.out.println(decode.getData());
 
                 if (valid.getKHQRStatus().getCode() == 0) {
@@ -345,7 +384,7 @@ public class MainKHQRApplication extends Application {
                     storeLabelInput.setText(decode.getData().getStoreLabel());
                     terminalLabelInput.setText(decode.getData().getTerminalLabel());
                     mobileNumberInput.setText(decode.getData().getMobileNumber());
-                    timeStampInput.setText(decode.getData().getTimestamp() + " - " + getUTC7DateTime(Long.parseLong(decode.getData().getTimestamp())));
+                    timeStampInput.setText(StringUtils.isNotBlank(decode.getData().getTimestamp()) ? decode.getData().getTimestamp() + " - " + getUTC7DateTime(Long.parseLong(decode.getData().getTimestamp())): "");
 
                     // qrImageView.setImage(generatedQRImage);
                     try {
@@ -367,10 +406,10 @@ public class MainKHQRApplication extends Application {
     private String getUTC7DateTime(long currentTime) {
 
         // Get the current time in milliseconds
-        long currentTimeMillis = System.currentTimeMillis();
+//        long currentTimeMillis = System.currentTimeMillis();
 
         // Convert milliseconds to LocalDateTime in UTC+0
-        Instant instant = Instant.ofEpochMilli(currentTimeMillis);
+        Instant instant = Instant.ofEpochMilli(currentTime);
         LocalDateTime utcDateTime = LocalDateTime.ofInstant(instant, ZoneId.of("UTC"));
 
         // Convert UTC time to UTC+7
