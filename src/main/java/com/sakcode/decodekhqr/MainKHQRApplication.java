@@ -23,18 +23,15 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
-
-import kh.org.nbc.bakong_khqr.BakongKHQR;
-import kh.org.nbc.bakong_khqr.model.*;
-import kh.org.nbc.bakong_khqr.utils.StringUtils;
+import kh.gov.nbc.bakong_khqr.BakongKHQR;
+import kh.gov.nbc.bakong_khqr.model.*;
+import kh.gov.nbc.bakong_khqr.utils.StringUtils;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
+import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
@@ -161,25 +158,7 @@ public class MainKHQRApplication extends Application {
         Button generateQRButton = new Button("Generate QR");
         GridPane.setConstraints(generateQRButton, 1, 19);
 
-        inputGrid.getChildren().addAll(payloadFormatIndicatorLabel, payloadFormatIndicatorInput,
-                pointOfInitiationMethodLabel, pointOfInitiationInput,
-                merchantTypeLabel, merchantTypeInput,
-                bakongAccountIDLabel, bakongAccountIDInput,
-                merchantIdLabel, merchantIdInput,
-                accountInformationLabel, accountInformationInput,
-                acquiringBankLabel, acquiringBankInput,
-                merchantCategoryCodeLabel, merchantCategoryCodeInput,
-                countryCodeLabel, countryCodeInput,
-                merchantNameLabel, merchantNameInput,
-                merchantCityLabel, merchantCityInput,
-                transactionCurrencyLabel, transactionCurrencyInput,
-                transactionAmountLabel, transactionAmountInput,
-                billNumberLabel, billNumberInput, storeLabelLabel,
-                storeLabelInput, terminalLabelLabel,
-                terminalLabelInput, mobileNumberLabel,
-                mobileNumberInput, generateQRButton,
-                selectFileButton, qrCodeInput,
-                decodeQRButton, timeStamp, timeStampInput);
+        inputGrid.getChildren().addAll(payloadFormatIndicatorLabel, payloadFormatIndicatorInput, pointOfInitiationMethodLabel, pointOfInitiationInput, merchantTypeLabel, merchantTypeInput, bakongAccountIDLabel, bakongAccountIDInput, merchantIdLabel, merchantIdInput, accountInformationLabel, accountInformationInput, acquiringBankLabel, acquiringBankInput, merchantCategoryCodeLabel, merchantCategoryCodeInput, countryCodeLabel, countryCodeInput, merchantNameLabel, merchantNameInput, merchantCityLabel, merchantCityInput, transactionCurrencyLabel, transactionCurrencyInput, transactionAmountLabel, transactionAmountInput, billNumberLabel, billNumberInput, storeLabelLabel, storeLabelInput, terminalLabelLabel, terminalLabelInput, mobileNumberLabel, mobileNumberInput, generateQRButton, selectFileButton, qrCodeInput, decodeQRButton, timeStamp, timeStampInput);
 
         // Right box: Display QR code and string
         VBox qrDisplayBox = new VBox(10);
@@ -214,8 +193,18 @@ public class MainKHQRApplication extends Application {
 
                 if (StringUtils.isNotBlank(mobileNumberInput.getText()))
                     individualInfo.setMobileNumber(mobileNumberInput.getText());
-                if (StringUtils.isNotBlank(transactionAmountInput.getText()))
+                if (StringUtils.isNotBlank(transactionAmountInput.getText())) {
+                    // Handle for new expire date
+                    LocalDateTime now = LocalDateTime.now().plusMinutes(1);
+                    ZoneId zoneId = ZoneId.systemDefault();
+                    ZonedDateTime zonedDateTime = now.atZone(zoneId);
+                    Instant instant = zonedDateTime.toInstant();
+                    long millis = instant.toEpochMilli();
+                    System.out.println(millis);
+
                     individualInfo.setAmount(Double.valueOf(transactionAmountInput.getText()));
+                    individualInfo.setExpirationTimestamp(millis);
+                }
                 if (StringUtils.isNotBlank(billNumberInput.getText()))
                     individualInfo.setBillNumber(billNumberInput.getText());
 
@@ -247,11 +236,26 @@ public class MainKHQRApplication extends Application {
                 merchantInfo.setMerchantCity(merchantTypeInput.getText());
                 merchantInfo.setCurrency(transactionCurrencyInput.getValue().equalsIgnoreCase("116") ? KHQRCurrency.KHR : KHQRCurrency.USD);
 
-                if (StringUtils.isNotBlank(terminalLabelInput.getText())) merchantInfo.setTerminalLabel(terminalLabelInput.getText());
-                if (StringUtils.isNotBlank(storeLabelInput.getText())) merchantInfo.setStoreLabel(storeLabelInput.getText());
-                if (StringUtils.isNotBlank(transactionAmountInput.getText())) merchantInfo.setAmount(Double.valueOf(transactionAmountInput.getText()));
-                if (StringUtils.isNotBlank(mobileNumberInput.getText())) merchantInfo.setMobileNumber(mobileNumberInput.getText());
-                if (StringUtils.isNotBlank(billNumberInput.getText())) merchantInfo.setBillNumber(billNumberInput.getText());
+                if (StringUtils.isNotBlank(terminalLabelInput.getText()))
+                    merchantInfo.setTerminalLabel(terminalLabelInput.getText());
+                if (StringUtils.isNotBlank(storeLabelInput.getText()))
+                    merchantInfo.setStoreLabel(storeLabelInput.getText());
+                if (StringUtils.isNotBlank(transactionAmountInput.getText())) {
+                    // Handle for new expire date
+                    LocalDateTime now = LocalDateTime.now().plusMinutes(1);
+                    ZoneId zoneId = ZoneId.systemDefault();
+                    ZonedDateTime zonedDateTime = now.atZone(zoneId);
+                    Instant instant = zonedDateTime.toInstant();
+                    long millis = instant.toEpochMilli();
+                    System.out.println(millis);
+
+                    merchantInfo.setExpirationTimestamp(millis);
+                    merchantInfo.setAmount(Double.valueOf(transactionAmountInput.getText()));
+                }
+                if (StringUtils.isNotBlank(mobileNumberInput.getText()))
+                    merchantInfo.setMobileNumber(mobileNumberInput.getText());
+                if (StringUtils.isNotBlank(billNumberInput.getText()))
+                    merchantInfo.setBillNumber(billNumberInput.getText());
 
                 KHQRResponse<KHQRData> khqrResponse = BakongKHQR.generateMerchant(merchantInfo);
                 String qrCode = khqrResponse.getData().getQr();
@@ -306,9 +310,10 @@ public class MainKHQRApplication extends Application {
                         KHQRResponse<KHQRDecodeData> decode = BakongKHQR.decode(qrCodeStr);
                         KHQRResponse<CRCValidation> valid = BakongKHQR.verify(qrCodeStr);
 
-                        System.out.println(decode.getData());
+                        System.out.println("========= selectedFile");
                         System.out.println(valid);
                         System.out.println(decode.getKHQRStatus());
+                        System.out.println(decode.getData());
 
                         if (valid.getKHQRStatus().getCode() == 0) {
                             System.out.println("QR Code is valid");
@@ -334,9 +339,10 @@ public class MainKHQRApplication extends Application {
                             mobileNumberInput.setText(decode.getData().getMobileNumber());
                             timeStampInput.setText(decode.getData().getTimestamp() + " - " + getUTC7DateTime(Long.parseLong(decode.getData().getTimestamp())));
 
+                            qrStringLabel.setText("Decode is successful");
                         } else {
-                            System.out.println("QR Code is not valid");
-                            qrStringLabel.setText("QR Code is not valid");
+                            System.out.println(valid.getKHQRStatus().getMessage());
+                            qrStringLabel.setText(valid.getKHQRStatus().getMessage());
                         }
                     }
 
@@ -358,6 +364,7 @@ public class MainKHQRApplication extends Application {
                 KHQRResponse<KHQRDecodeData> decode = BakongKHQR.decode(qrCodeStr);
                 KHQRResponse<CRCValidation> valid = BakongKHQR.verify(qrCodeStr);
 
+                System.out.println("========= decodeQRButton");
                 System.out.println(valid);
                 System.out.println(decode.getKHQRStatus());
                 System.out.println(decode.getData());
@@ -384,7 +391,7 @@ public class MainKHQRApplication extends Application {
                     storeLabelInput.setText(decode.getData().getStoreLabel());
                     terminalLabelInput.setText(decode.getData().getTerminalLabel());
                     mobileNumberInput.setText(decode.getData().getMobileNumber());
-                    timeStampInput.setText(StringUtils.isNotBlank(decode.getData().getTimestamp()) ? decode.getData().getTimestamp() + " - " + getUTC7DateTime(Long.parseLong(decode.getData().getTimestamp())): "");
+                    timeStampInput.setText(StringUtils.isNotBlank(decode.getData().getTimestamp()) ? decode.getData().getTimestamp() + " - " + getUTC7DateTime(Long.parseLong(decode.getData().getTimestamp())) : "");
 
                     // qrImageView.setImage(generatedQRImage);
                     try {
@@ -395,8 +402,8 @@ public class MainKHQRApplication extends Application {
                     }
 
                 } else {
-                    System.out.println("QR Code is not valid");
-                    qrStringLabel.setText("QR Code is not valid");
+                    System.out.println(valid.getKHQRStatus().getMessage());
+                    qrStringLabel.setText(valid.getKHQRStatus().getMessage());
                 }
 
             }

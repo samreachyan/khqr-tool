@@ -17,9 +17,9 @@
     <dependencies>
         <!-- https://mvnrepository.com/artifact/kh.org.nbc.bakong_khqr/sdk-java -->
         <dependency>
-            <groupId>kh.org.nbc.bakong_khqr</groupId>
+            <groupId>kh.gov.nbc.bakong_khqr</groupId>
             <artifactId>sdk-java</artifactId>
-            <version>1.0.0.9</version>
+            <version>1.0.0.14</version>
         </dependency>
         <!-- https://mvnrepository.com/artifact/com.google.zxing/core -->
         <dependency>
