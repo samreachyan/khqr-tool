@@ -177,7 +177,7 @@ public class MainKHQRApplication extends Application {
         int row = 0;
         addGridRow(inputGrid, row++, "Payload Format Indicator:", payloadFormatIndicatorInput);
         addGridRow(inputGrid, row++, "Point of Initiation Method:", pointOfInitiationInput);
-        addGridRow(inputGrid, row++, "Merchant Type:", merchantTypeInput);
+        addGridRow(inputGrid, row++, "QR Type:", merchantTypeInput);
         addGridRow(inputGrid, row++, "Bakong Account ID:", bakongAccountIDInput);
         addGridRow(inputGrid, row++, "Merchant ID:", merchantIdInput);
         addGridRow(inputGrid, row++, "Account Information:", accountInformationInput);
