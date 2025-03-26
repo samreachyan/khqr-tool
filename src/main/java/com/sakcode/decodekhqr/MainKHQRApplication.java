@@ -239,7 +239,7 @@ public class MainKHQRApplication extends Application {
         generateQRButton.setOnAction(e -> {
             try {
                 String qrCode = generateQRCode(merchantTypeInput, bakongAccountIDInput, merchantIdInput,
-                        accountInformationInput, acquiringBankInput, merchantNameInput, merchantCityInput,
+                        accountInformationInput, acquiringBankInput, merchantNameInput, merchantCityInput, merchantCategoryCodeInput,
                         transactionCurrencyInput, transactionAmountInput, billNumberInput, storeLabelInput,
                         terminalLabelInput, mobileNumberInput);
                 qrCodeInput.setText(qrCode);
@@ -304,7 +304,7 @@ public class MainKHQRApplication extends Application {
 
     private String generateQRCode(ComboBox<String> merchantTypeInput, TextField bakongAccountIDInput, TextField merchantIdInput,
                                   TextField accountInformationInput, TextField acquiringBankInput,
-                                  TextField merchantNameInput, TextField merchantCityInput,
+                                  TextField merchantNameInput, TextField merchantCityInput, TextField merchantCategoryCode,
                                   ComboBox<String> transactionCurrencyInput, TextField transactionAmountInput,
                                   TextField billNumberInput, TextField storeLabelInput, TextField terminalLabelInput,
                                   TextField mobileNumberInput) {
@@ -342,7 +342,16 @@ public class MainKHQRApplication extends Application {
                 individualInfo.setAmount(Double.parseDouble(transactionAmountInput.getText()));
             }
             if (StringUtils.isNotBlank(billNumberInput.getText())) individualInfo.setBillNumber(billNumberInput.getText());
-            return BakongKHQR.generateIndividual(individualInfo).getData().getQr();
+
+            KHQRResponse<KHQRData> response = BakongUtils.generateIndividual(individualInfo, merchantCategoryCode.getText());
+            System.out.println("Generated QR: " + response);
+
+            if (response.getKHQRStatus().getCode() == 0) {
+                return response.getData().getQr();
+            } else {
+                throw new RuntimeException(response.getKHQRStatus().getMessage());
+            }
+
         } else {
             MerchantInfo merchantInfo = new MerchantInfo();
             merchantInfo.setBakongAccountId(bakongAccountIDInput.getText());
@@ -373,9 +382,11 @@ public class MainKHQRApplication extends Application {
             if (StringUtils.isNotBlank(mobileNumberInput.getText())) merchantInfo.setMobileNumber(mobileNumberInput.getText());
             if (StringUtils.isNotBlank(billNumberInput.getText())) merchantInfo.setBillNumber(billNumberInput.getText());
 
-            KHQRResponse<KHQRData> response = BakongKHQR.generateMerchant(merchantInfo);
+            KHQRResponse<KHQRData> response = BakongUtils.generateMerchant(merchantInfo, merchantCategoryCode.getText());
+            System.out.println("Generated QR: " + response);
+
             if (response.getKHQRStatus().getCode() == 0) {
-                return BakongKHQR.generateMerchant(merchantInfo).getData().getQr();
+                return response.getData().getQr();
             } else {
                 throw new RuntimeException(response.getKHQRStatus().getMessage());
             }
@@ -404,6 +415,7 @@ public class MainKHQRApplication extends Application {
 
         System.out.println("====");
         System.out.println("Valid: " + valid);
+        System.out.println(decode);
 
         if (valid.getKHQRStatus().getCode() == 0) {
             qrStringLabel.setText("QR Code is valid");
