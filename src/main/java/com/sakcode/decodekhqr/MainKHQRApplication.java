@@ -1,5 +1,6 @@
 package com.sakcode.decodekhqr;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.zxing.*;
 import com.google.zxing.client.j2se.BufferedImageLuminanceSource;
 import com.google.zxing.client.j2se.MatrixToImageWriter;
@@ -32,7 +33,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class MainKHQRApplication extends Application {
-
+    private final ObjectMapper objectMapper = new ObjectMapper();
     // Currency mapping: Display value -> Backend code
     private static final Map<String, String> CURRENCY_MAP = new HashMap<>();
     static {
@@ -96,10 +97,18 @@ public class MainKHQRApplication extends Application {
         qrStringLabel.setMaxWidth(Double.MAX_VALUE);
         VBox.setVgrow(qrStringLabel, Priority.ALWAYS);
 
-        qrDisplayBox.getChildren().addAll(qrImageView, qrStringLabel);
+        // Add TextArea for JSON result
+        TextArea jsonResultArea = new TextArea();
+        jsonResultArea.setPrefRowCount(10);
+        jsonResultArea.setWrapText(true);
+        jsonResultArea.setEditable(false);
+        jsonResultArea.setMaxWidth(Double.MAX_VALUE);
+//        jsonResultArea.setMaxHeight(200);
+        VBox.setVgrow(jsonResultArea, Priority.ALWAYS);
+        qrDisplayBox.getChildren().addAll(qrImageView, qrStringLabel, jsonResultArea);
 
         // Create input grid and set up button actions
-        GridPane inputGrid = createInputGrid(qrImageView, qrStringLabel);
+        GridPane inputGrid = createInputGrid(qrImageView, qrStringLabel, jsonResultArea);
         scrollPane.setContent(inputGrid);
         inputPanel.getChildren().add(scrollPane);
 
@@ -115,7 +124,7 @@ public class MainKHQRApplication extends Application {
         inputPanel.prefWidthProperty().bind(root.widthProperty().multiply(0.5));
     }
 
-    private GridPane createInputGrid(ImageView qrImageView, Label qrStringLabel) {
+    private GridPane createInputGrid(ImageView qrImageView, Label qrStringLabel, TextArea jsonResultArea) {
         GridPane inputGrid = new GridPane();
         inputGrid.setPadding(new Insets(10));
         inputGrid.setVgap(8);
@@ -208,7 +217,7 @@ public class MainKHQRApplication extends Application {
                 merchantIdInput, accountInformationInput, acquiringBankInput, merchantCategoryCodeInput,
                 countryCodeInput, merchantNameInput, merchantCityInput, transactionCurrencyInput,
                 transactionAmountInput, billNumberInput, storeLabelInput, terminalLabelInput,
-                mobileNumberInput, timeStampInput, expireStampInput);
+                mobileNumberInput, timeStampInput, expireStampInput, jsonResultArea);
 
         return inputGrid;
     }
@@ -235,13 +244,13 @@ public class MainKHQRApplication extends Application {
                                     TextField merchantNameInput, TextField merchantCityInput,
                                     ComboBox<String> transactionCurrencyInput, TextField transactionAmountInput,
                                     TextField billNumberInput, TextField storeLabelInput, TextField terminalLabelInput,
-                                    TextField mobileNumberInput, Label timeStampInput, Label expireStampInput) {
+                                    TextField mobileNumberInput, Label timeStampInput, Label expireStampInput, TextArea jsonResultArea) {
         generateQRButton.setOnAction(e -> {
             try {
                 String qrCode = generateQRCode(merchantTypeInput, bakongAccountIDInput, merchantIdInput,
                         accountInformationInput, acquiringBankInput, merchantNameInput, merchantCityInput, merchantCategoryCodeInput,
                         transactionCurrencyInput, transactionAmountInput, billNumberInput, storeLabelInput,
-                        terminalLabelInput, mobileNumberInput);
+                        terminalLabelInput, mobileNumberInput, jsonResultArea);
                 qrCodeInput.setText(qrCode);
                 qrStringLabel.setText("Generated KHQR Image");
 
@@ -274,9 +283,10 @@ public class MainKHQRApplication extends Application {
                             pointOfInitiationInput, merchantTypeInput, bakongAccountIDInput, merchantIdInput,
                             accountInformationInput, acquiringBankInput, merchantCategoryCodeInput, countryCodeInput,
                             merchantNameInput, merchantCityInput, transactionCurrencyInput, transactionAmountInput,
-                            billNumberInput, storeLabelInput, terminalLabelInput, mobileNumberInput, timeStampInput, expireStampInput);
+                            billNumberInput, storeLabelInput, terminalLabelInput, mobileNumberInput, timeStampInput, expireStampInput, jsonResultArea);
                 } catch (Exception ex) {
                     ex.printStackTrace();
+                    jsonResultArea.clear();
                     qrImageView.setImage(null);
                     qrStringLabel.setText("Error decoding image QR.");
                 }
@@ -291,10 +301,11 @@ public class MainKHQRApplication extends Application {
                             pointOfInitiationInput, merchantTypeInput, bakongAccountIDInput, merchantIdInput,
                             accountInformationInput, acquiringBankInput, merchantCategoryCodeInput, countryCodeInput,
                             merchantNameInput, merchantCityInput, transactionCurrencyInput, transactionAmountInput,
-                            billNumberInput, storeLabelInput, terminalLabelInput, mobileNumberInput, timeStampInput, expireStampInput);
+                            billNumberInput, storeLabelInput, terminalLabelInput, mobileNumberInput, timeStampInput, expireStampInput, jsonResultArea);
                     qrImageView.setImage(generateQRCodeImage(qrCodeStr, 400, 400));
                 } catch (Exception ex) {
                     ex.printStackTrace();
+                    jsonResultArea.clear();
                     qrImageView.setImage(null);
                     qrStringLabel.setText("Error decoding QR.");
                 }
@@ -307,7 +318,7 @@ public class MainKHQRApplication extends Application {
                                   TextField merchantNameInput, TextField merchantCityInput, TextField merchantCategoryCode,
                                   ComboBox<String> transactionCurrencyInput, TextField transactionAmountInput,
                                   TextField billNumberInput, TextField storeLabelInput, TextField terminalLabelInput,
-                                  TextField mobileNumberInput) {
+                                  TextField mobileNumberInput, TextArea jsonResultArea) {
 
         String selectedCurrency = transactionCurrencyInput.getValue();
         String currencyCode = CURRENCY_MAP.get(selectedCurrency);
@@ -336,7 +347,6 @@ public class MainKHQRApplication extends Application {
                         .toEpochMilli();
                 System.out.println("Current time (GMT+7): " + now);
                 System.out.println("Plus 1 minute (GMT+7): " + plusOneMinute);
-                System.out.println("Milliseconds since epoch: " + milliseconds);
 
                 individualInfo.setExpirationTimestamp(milliseconds);
                 individualInfo.setAmount(Double.parseDouble(transactionAmountInput.getText()));
@@ -344,7 +354,13 @@ public class MainKHQRApplication extends Application {
             if (StringUtils.isNotBlank(billNumberInput.getText())) individualInfo.setBillNumber(billNumberInput.getText());
 
             KHQRResponse<KHQRData> response = BakongUtils.generateIndividual(individualInfo, merchantCategoryCode.getText());
-            System.out.println("Generated QR: " + response);
+
+            try {
+                String jsonResult = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(response);
+                jsonResultArea.setText(jsonResult);
+            } catch (Exception exception) {
+                exception.printStackTrace();
+            }
 
             if (response.getKHQRStatus().getCode() == 0) {
                 return response.getData().getQr();
@@ -374,7 +390,6 @@ public class MainKHQRApplication extends Application {
                         .toEpochMilli();
                 System.out.println("Current time (GMT+7): " + now);
                 System.out.println("Plus 1 minute (GMT+7): " + plusOneMinute);
-                System.out.println("Milliseconds since epoch: " + milliseconds);
 
                 merchantInfo.setAmount(Double.parseDouble(transactionAmountInput.getText()));
                 merchantInfo.setExpirationTimestamp(milliseconds);
@@ -383,7 +398,13 @@ public class MainKHQRApplication extends Application {
             if (StringUtils.isNotBlank(billNumberInput.getText())) merchantInfo.setBillNumber(billNumberInput.getText());
 
             KHQRResponse<KHQRData> response = BakongUtils.generateMerchant(merchantInfo, merchantCategoryCode.getText());
-            System.out.println("Generated QR: " + response);
+
+            try {
+                String jsonResult = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(response);
+                jsonResultArea.setText(jsonResult);
+            } catch (Exception exception) {
+                exception.printStackTrace();
+            }
 
             if (response.getKHQRStatus().getCode() == 0) {
                 return response.getData().getQr();
@@ -409,20 +430,23 @@ public class MainKHQRApplication extends Application {
                                            TextField merchantNameInput, TextField merchantCityInput,
                                            ComboBox<String> transactionCurrencyInput, TextField transactionAmountInput,
                                            TextField billNumberInput, TextField storeLabelInput, TextField terminalLabelInput,
-                                           TextField mobileNumberInput, Label timeStampInput, Label expireStampInput) {
+                                           TextField mobileNumberInput, Label timeStampInput, Label expireStampInput, TextArea jsonResultArea) {
         KHQRResponse<KHQRDecodeData> decode = BakongKHQR.decode(qrCodeStr);
         KHQRResponse<CRCValidation> valid = BakongKHQR.verify(qrCodeStr);
 
-        System.out.println("====");
-        System.out.println("Valid: " + valid);
-        System.out.println(decode);
+        // Convert decode object to JSON and display in jsonResultArea
+        try {
+            String jsonResult = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(decode);
+            jsonResultArea.setText(jsonResult);
+        } catch (Exception e) {
+            jsonResultArea.setText("Error serializing JSON: " + e.getMessage());
+        }
 
         if (valid.getKHQRStatus().getCode() == 0) {
             qrStringLabel.setText("QR Code is valid");
             KHQRDecodeData data = decode.getData();
             payloadFormatIndicatorInput.setText(data.getPayloadFormatIndicator());
             pointOfInitiationInput.setValue(data.getPointOfInitiationMethod());
-//            merchantTypeInput.setText(data.getMerchantType());
             merchantTypeInput.setValue(REVERSE_MERCHANT_TYPE_MAP.getOrDefault(data.getMerchantType(), "Remittance"));
             bakongAccountIDInput.setText(data.getBakongAccountID());
             merchantIdInput.setText(data.getMerchantId());
@@ -433,7 +457,6 @@ public class MainKHQRApplication extends Application {
             merchantNameInput.setText(data.getMerchantName());
             merchantCityInput.setText(data.getMerchantCity());
             transactionCurrencyInput.setValue(REVERSE_CURRENCY_MAP.getOrDefault(data.getTransactionCurrency(), "USD"));
-//            transactionCurrencyInput.setValue(data.getTransactionCurrency());
             transactionAmountInput.setText(data.getTransactionAmount());
             billNumberInput.setText(data.getBillNumber());
             storeLabelInput.setText(data.getStoreLabel());

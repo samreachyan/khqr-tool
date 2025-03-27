@@ -15,6 +15,12 @@
     </properties>
 
     <dependencies>
+        <!-- https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-databind -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>2.18.3</version>
+        </dependency>
         <!-- https://mvnrepository.com/artifact/kh.org.nbc.bakong_khqr/sdk-java -->
         <dependency>
             <groupId>kh.gov.nbc.bakong_khqr</groupId>
