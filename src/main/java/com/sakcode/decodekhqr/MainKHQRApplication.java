@@ -66,6 +66,8 @@ public class MainKHQRApplication extends Application {
     @Override
     public void start(Stage primaryStage) {
         primaryStage.setTitle("QR Code Generator and Decoder - FTB Samreach");
+        // Set the application icon
+        primaryStage.getIcons().add(new Image(getClass().getResourceAsStream("/icon_64.png")));
 
         // Root layout
         HBox root = new HBox(20);
