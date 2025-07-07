@@ -333,7 +333,7 @@ public class MainKHQRApplication extends Application {
             individualInfo.setAccountInformation(accountInformationInput.getText());
             individualInfo.setAcquiringBank(acquiringBankInput.getText());
             individualInfo.setBakongAccountId(bakongAccountIDInput.getText());
-            individualInfo.setCurrency(currencyCode.equalsIgnoreCase("KHR") ? KHQRCurrency.KHR : KHQRCurrency.USD);
+            individualInfo.setCurrency(selectedCurrency.equalsIgnoreCase("KHR") ? KHQRCurrency.KHR : KHQRCurrency.USD);
             individualInfo.setMerchantName(merchantNameInput.getText());
             individualInfo.setMerchantCity(merchantCityInput.getText());
             if (StringUtils.isNotBlank(mobileNumberInput.getText())) individualInfo.setMobileNumber(mobileNumberInput.getText());
@@ -377,7 +377,7 @@ public class MainKHQRApplication extends Application {
             merchantInfo.setMerchantId(merchantIdInput.getText());
             merchantInfo.setMerchantName(merchantNameInput.getText());
             merchantInfo.setMerchantCity(merchantCityInput.getText());
-            merchantInfo.setCurrency(currencyCode.equalsIgnoreCase("KHR") ? KHQRCurrency.KHR : KHQRCurrency.USD);
+            merchantInfo.setCurrency(selectedCurrency.equalsIgnoreCase("KHR") ? KHQRCurrency.KHR : KHQRCurrency.USD);
             if (StringUtils.isNotBlank(terminalLabelInput.getText())) merchantInfo.setTerminalLabel(terminalLabelInput.getText());
             if (StringUtils.isNotBlank(storeLabelInput.getText())) merchantInfo.setStoreLabel(storeLabelInput.getText());
             if (StringUtils.isNotBlank(transactionAmountInput.getText())){

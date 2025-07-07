@@ -25,7 +25,7 @@
         <dependency>
             <groupId>kh.gov.nbc.bakong_khqr</groupId>
             <artifactId>sdk-java</artifactId>
-            <version>1.0.0.14</version>
+            <version>1.0.0.15</version>
         </dependency>
         <!-- https://mvnrepository.com/artifact/com.google.zxing/core -->
         <dependency>
