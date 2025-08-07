@@ -62,10 +62,18 @@ public class MainKHQRApplication extends Application {
         REVERSE_MERCHANT_TYPE_MAP.put("30", "Merchant");
     }
 
+    // Alternative way to set multiple styles
+    String styles = """
+        -fx-text-fill: blue;
+        -fx-font-size: 16px;
+        -fx-font-family: 'Verdana';
+        -fx-font-style: italic;
+    """;
+
 
     @Override
     public void start(Stage primaryStage) {
-        primaryStage.setTitle("QR Code Generator and Decoder - FTB Samreach");
+        primaryStage.setTitle("QR Code Generator and Decoder - @samreachyan");
         // Set the application icon
         primaryStage.getIcons().add(new Image(getClass().getResourceAsStream("/icon_64.png")));
 
@@ -262,13 +270,13 @@ public class MainKHQRApplication extends Application {
 
                 qrImageView.setImage(generateQRCodeImage(qrCode, 400, 400));
             } catch (RuntimeException ex) {
-                ex.printStackTrace();
                 qrImageView.setImage(null);
                 qrStringLabel.setText("Invalid: " + ex.getMessage());
+                qrStringLabel.setStyle(styles);
             } catch (Exception ex) {
-                ex.printStackTrace();
                 qrImageView.setImage(null);
-                qrStringLabel.setText("Error generating QR.");
+                qrStringLabel.setText(ex.getMessage());
+                qrStringLabel.setStyle(styles);
             }
         });
 
@@ -287,10 +295,11 @@ public class MainKHQRApplication extends Application {
                             merchantNameInput, merchantCityInput, transactionCurrencyInput, transactionAmountInput,
                             billNumberInput, storeLabelInput, terminalLabelInput, mobileNumberInput, timeStampInput, expireStampInput, jsonResultArea);
                 } catch (Exception ex) {
-                    ex.printStackTrace();
-                    jsonResultArea.clear();
+//                    ex.printStackTrace();
+//                    jsonResultArea.clear();
                     qrImageView.setImage(null);
-                    qrStringLabel.setText("Error decoding image QR.");
+                    qrStringLabel.setText(ex.getMessage());
+                    qrStringLabel.setStyle(styles);
                 }
             }
         });
@@ -306,10 +315,10 @@ public class MainKHQRApplication extends Application {
                             billNumberInput, storeLabelInput, terminalLabelInput, mobileNumberInput, timeStampInput, expireStampInput, jsonResultArea);
                     qrImageView.setImage(generateQRCodeImage(qrCodeStr, 400, 400));
                 } catch (Exception ex) {
-                    ex.printStackTrace();
-                    jsonResultArea.clear();
+//                    jsonResultArea.clear();
                     qrImageView.setImage(null);
-                    qrStringLabel.setText("Error decoding QR.");
+                    qrStringLabel.setText(ex.getMessage());
+                    qrStringLabel.setStyle(styles);
                 }
             }
         });
@@ -432,7 +441,7 @@ public class MainKHQRApplication extends Application {
                                            TextField merchantNameInput, TextField merchantCityInput,
                                            ComboBox<String> transactionCurrencyInput, TextField transactionAmountInput,
                                            TextField billNumberInput, TextField storeLabelInput, TextField terminalLabelInput,
-                                           TextField mobileNumberInput, Label timeStampInput, Label expireStampInput, TextArea jsonResultArea) {
+                                           TextField mobileNumberInput, Label timeStampInput, Label expireStampInput, TextArea jsonResultArea) throws Exception {
         KHQRResponse<KHQRDecodeData> decode = BakongKHQR.decode(qrCodeStr);
         KHQRResponse<CRCValidation> valid = BakongKHQR.verify(qrCodeStr);
 
@@ -467,7 +476,30 @@ public class MainKHQRApplication extends Application {
             timeStampInput.setText(StringUtils.isNotBlank(data.getTimestamp()) ? data.getTimestamp() + " - " + getUTC7DateTime(Long.parseLong(data.getTimestamp())) : "");
             expireStampInput.setText(StringUtils.isNotBlank(data.getExpirationTimestamp()) ? data.getExpirationTimestamp() + " - " + getUTC7DateTime(Long.parseLong(data.getExpirationTimestamp())) : "");
         } else {
-            qrStringLabel.setText("QR Code is not valid: " + valid.getKHQRStatus().getMessage());
+            // QR is invalid for some reason but extract data into input fields
+            if (decode.getKHQRStatus().getCode() == 0) {
+                KHQRDecodeData data = decode.getData();
+                payloadFormatIndicatorInput.setText(data.getPayloadFormatIndicator());
+                pointOfInitiationInput.setValue(data.getPointOfInitiationMethod());
+                merchantTypeInput.setValue(REVERSE_MERCHANT_TYPE_MAP.getOrDefault(data.getMerchantType(), "Remittance"));
+                bakongAccountIDInput.setText(data.getBakongAccountID());
+                merchantIdInput.setText(data.getMerchantId());
+                accountInformationInput.setText(data.getAccountInformation());
+                acquiringBankInput.setText(data.getAcquiringBank());
+                merchantCategoryCodeInput.setText(data.getMerchantCategoryCode());
+                countryCodeInput.setText(data.getCountryCode());
+                merchantNameInput.setText(data.getMerchantName());
+                merchantCityInput.setText(data.getMerchantCity());
+                transactionCurrencyInput.setValue(REVERSE_CURRENCY_MAP.getOrDefault(data.getTransactionCurrency(), "USD"));
+                transactionAmountInput.setText(data.getTransactionAmount());
+                billNumberInput.setText(data.getBillNumber());
+                storeLabelInput.setText(data.getStoreLabel());
+                terminalLabelInput.setText(data.getTerminalLabel());
+                mobileNumberInput.setText(data.getMobileNumber());
+                timeStampInput.setText(StringUtils.isNotBlank(data.getTimestamp()) ? data.getTimestamp() + " - " + getUTC7DateTime(Long.parseLong(data.getTimestamp())) : "");
+                expireStampInput.setText(StringUtils.isNotBlank(data.getExpirationTimestamp()) ? data.getExpirationTimestamp() + " - " + getUTC7DateTime(Long.parseLong(data.getExpirationTimestamp())) : "");
+            }
+            throw new RuntimeException("QR Code is not valid: " + valid.getKHQRStatus().getMessage());
         }
     }
 
