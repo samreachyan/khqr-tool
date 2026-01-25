@@ -9,6 +9,7 @@ module com.ftb.decodekhqr {
     requires java.desktop;
     requires com.google.zxing.javase;
     requires com.fasterxml.jackson.databind;
+    requires org.apache.commons.lang3;
 
     opens com.sakcode.decodekhqr to javafx.fxml;
     exports com.sakcode.decodekhqr;
