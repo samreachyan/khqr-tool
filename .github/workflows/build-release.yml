@@ -78,7 +78,7 @@ jobs:
           if-no-files-found: error
 
   create-release:
-    needs: [build-macos, build-windows, build-linux]
+    needs: [build-macos, build-linux]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v')
     steps:
