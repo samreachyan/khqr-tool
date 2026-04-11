@@ -184,12 +184,10 @@
                     <mainJar>${project.build.finalName}.jar</mainJar>
                     
                     <!-- Platform-specific icon configuration -->
-                    <!-- Use general icon parameter, jpackage will handle platform-specific formats -->
+                    <!-- jpackage will automatically use the correct icon format based on platform -->
+                    <!-- The icon parameter should point to a platform-appropriate icon file -->
+                    <!-- Each execution will override this with the correct icon for its platform -->
                     <icon>${app.icon.macos}</icon>
-                    <!-- Also set platform-specific icons as backup -->
-                    <linuxIcon>${app.icon.linux}</linuxIcon>
-                    <winIcon>${app.icon.windows}</winIcon>
-                    <macIcon>${app.icon.macos}</macIcon>
                     
                     <!-- Platform-specific configuration -->
                     <linuxPackageName>${project.artifactId}</linuxPackageName>
@@ -240,6 +238,8 @@
                             <type>DEB</type>
                             <jpackageHome>${env.JAVA_HOME}</jpackageHome>
                             <skip>${skip.linux.deb}</skip>
+                            <!-- Linux uses PNG icon -->
+                            <icon>${app.icon.linux}</icon>
                         </configuration>
                     </execution>
                     <execution>
@@ -252,6 +252,8 @@
                             <type>RPM</type>
                             <jpackageHome>${env.JAVA_HOME}</jpackageHome>
                             <skip>${skip.linux.rpm}</skip>
+                            <!-- Linux uses PNG icon -->
+                            <icon>${app.icon.linux}</icon>
                         </configuration>
                     </execution>
                     <execution>
@@ -264,6 +266,8 @@
                             <type>MSI</type>
                             <jpackageHome>${env.JAVA_HOME}</jpackageHome>
                             <skip>${skip.windows}</skip>
+                            <!-- Windows-specific icon -->
+                            <icon>${app.icon.windows}</icon>
                         </configuration>
                     </execution>
                     <execution>
@@ -276,6 +280,8 @@
                             <type>DMG</type>
                             <jpackageHome>${env.JAVA_HOME}</jpackageHome>
                             <skip>${skip.macos}</skip>
+                            <!-- macOS uses ICNS icon -->
+                            <icon>${app.icon.macos}</icon>
                         </configuration>
                     </execution>
                 </executions>
