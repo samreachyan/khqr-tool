@@ -20,45 +20,18 @@ jobs:
           distribution: 'liberica'  # Liberica JDK includes JavaFX
 
       - name: Build with Maven
-        run: mvn clean package -DskipTests -Dskip.linux.deb=true -Dskip.linux.rpm=true -Dskip.windows=true -Dskip.macos=false
+        run: mvn clean package -DskipTests -Dskip.linux.deb=true -Dskip.linux.rpm=true -Dskip.macos=false
 
       - name: Create macOS DMG installer
         run: |
           # Run jpackage for macOS
-          mvn jpackage:jpackage@jpackage-macos -DjpackageHome=$JAVA_HOME -Dskip.linux.deb=true -Dskip.linux.rpm=true -Dskip.windows=true -Dskip.macos=false
+          mvn jpackage:jpackage@jpackage-macos -DjpackageHome=$JAVA_HOME -Dskip.linux.deb=true -Dskip.linux.rpm=true -Dskip.macos=false
           
       - name: Upload macOS artifact
         uses: actions/upload-artifact@v4
         with:
           name: macos-installer
           path: target/jpackage/*.dmg
-          if-no-files-found: error
-
-  build-windows:
-    runs-on: windows-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up JDK 17 with JavaFX
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'liberica'  # Liberica JDK includes JavaFX
-
-      - name: Build with Maven
-        run: mvn clean package -DskipTests -Dskip.linux=true -Dskip.windows=false -Dskip.macos=true
-
-      - name: Create Windows MSI installer
-        run: |
-          # Run jpackage for Windows
-          mvn jpackage:jpackage@jpackage-windows -DjpackageHome=$env:JAVA_HOME -Dskip.linux=true -Dskip.windows=false -Dskip.macos=true
-          
-      - name: Upload Windows artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: windows-installer
-          path: target/jpackage/*.msi
           if-no-files-found: error
 
   build-linux:
@@ -84,17 +57,17 @@ jobs:
       - name: Build with Maven
         run: |
           if [ "${{ matrix.package-type }}" = "deb" ]; then
-            mvn clean package -DskipTests -Dskip.linux.deb=false -Dskip.linux.rpm=true -Dskip.windows=true -Dskip.macos=true
+            mvn clean package -DskipTests -Dskip.linux.deb=false -Dskip.linux.rpm=true -Dskip.macos=true
           else
-            mvn clean package -DskipTests -Dskip.linux.deb=true -Dskip.linux.rpm=false -Dskip.windows=true -Dskip.macos=true
+            mvn clean package -DskipTests -Dskip.linux.deb=true -Dskip.linux.rpm=false -Dskip.macos=true
           fi
 
       - name: Create Linux installer (${{ matrix.package-type }})
         run: |
           if [ "${{ matrix.package-type }}" = "deb" ]; then
-            mvn jpackage:jpackage@jpackage-linux-deb -DjpackageHome=$JAVA_HOME -Dskip.linux.deb=false -Dskip.linux.rpm=true -Dskip.windows=true -Dskip.macos=true
+            mvn jpackage:jpackage@jpackage-linux-deb -DjpackageHome=$JAVA_HOME -Dskip.linux.deb=false -Dskip.linux.rpm=true -Dskip.macos=true
           else
-            mvn jpackage:jpackage@jpackage-linux-rpm -DjpackageHome=$JAVA_HOME -Dskip.linux.deb=true -Dskip.linux.rpm=false -Dskip.windows=true -Dskip.macos=true
+            mvn jpackage:jpackage@jpackage-linux-rpm -DjpackageHome=$JAVA_HOME -Dskip.linux.deb=true -Dskip.linux.rpm=false -Dskip.macos=true
           fi
           
       - name: Upload Linux artifact (${{ matrix.package-type }})
