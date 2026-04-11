@@ -81,6 +81,8 @@ jobs:
     needs: [build-macos, build-linux]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: write
     steps:
       - name: Download all artifacts
         uses: actions/download-artifact@v4
@@ -126,7 +128,7 @@ jobs:
             
             ## System Requirements
             - No Java installation required (JRE bundled)
-            - macOS 10.15+, or Linux with glibc 2.17+
+            - macOS 10.15+ and Linux with glibc 2.17+
             
             ## Changes
             See the commit history for detailed changes.
