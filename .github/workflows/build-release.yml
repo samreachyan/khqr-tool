@@ -98,7 +98,6 @@ jobs:
           prerelease: false
           files: |
             artifacts/macos-installer/*.dmg
-            artifacts/windows-installer/*.msi
             artifacts/linux-deb-installer/*.deb
             artifacts/linux-rpm-installer/*.rpm
           body: |
@@ -108,9 +107,6 @@ jobs:
             
             ### macOS
             - **KHQR Tool.dmg** - Double-click to install
-            
-            ### Windows
-            - **KHQR Tool.msi** - Run the installer
             
             ### Linux
             - **KHQR Tool.deb** - For Debian/Ubuntu based systems
@@ -130,7 +126,7 @@ jobs:
             
             ## System Requirements
             - No Java installation required (JRE bundled)
-            - macOS 10.15+, Windows 10+, or Linux with glibc 2.17+
+            - macOS 10.15+, or Linux with glibc 2.17+
             
             ## Changes
             See the commit history for detailed changes.
