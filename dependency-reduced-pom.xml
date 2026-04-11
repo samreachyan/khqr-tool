@@ -4,7 +4,7 @@
   <groupId>com.ftb</groupId>
   <artifactId>decodekhqr</artifactId>
   <name>decodekhqr</name>
-  <version>1.0.0</version>
+  <version>1.0.1</version>
   <build>
     <plugins>
       <plugin>
@@ -129,7 +129,7 @@
           <licenseFile>LICENSE</licenseFile>
           <mainClass>${main.class}</mainClass>
           <mainJar>${project.build.finalName}.jar</mainJar>
-          <icon>${app.icon.linux}</icon>
+          <icon>${app.icon.macos}</icon>
           <linuxIcon>${app.icon.linux}</linuxIcon>
           <winIcon>${app.icon.windows}</winIcon>
           <macIcon>${app.icon.macos}</macIcon>
@@ -143,8 +143,10 @@
           <winPerUserInstall>true</winPerUserInstall>
           <winDirChooser>true</winDirChooser>
           <macPackageName>${app.name}</macPackageName>
+          <macPackageIdentifier>com.sakcode.decodekhqr</macPackageIdentifier>
           <macCategory>public.app-category.utilities</macCategory>
           <macSign>false</macSign>
+          <macEntitlementsFile />
           <javaOptions>
             <option>-Dfile.encoding=UTF-8</option>
             <option>-Xmx512m</option>
@@ -156,6 +158,33 @@
       </plugin>
     </plugins>
   </build>
+  <profiles>
+    <profile>
+      <id>local-javafx-jmods</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.panteleyev</groupId>
+            <artifactId>jpackage-maven-plugin</artifactId>
+            <configuration>
+              <modulePath>${javafx.module.path}</modulePath>
+              <addModules>
+                <module>javafx.controls</module>
+                <module>javafx.fxml</module>
+                <module>javafx.graphics</module>
+              </addModules>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+      <properties>
+        <javafx.module.path>${javafx.jmods.path}</javafx.module.path>
+      </properties>
+    </profile>
+    <profile>
+      <id>liberica-jdk</id>
+    </profile>
+  </profiles>
   <dependencies>
     <dependency>
       <groupId>org.junit.jupiter</groupId>

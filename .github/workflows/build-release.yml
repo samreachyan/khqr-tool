@@ -13,11 +13,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17
+      - name: Set up JDK 17 with JavaFX
         uses: actions/setup-java@v4
         with:
           java-version: '17'
-          distribution: 'temurin'
+          distribution: 'liberica'  # Liberica JDK includes JavaFX
 
       - name: Build with Maven
         run: mvn clean package -DskipTests -Dskip.linux.deb=true -Dskip.linux.rpm=true -Dskip.windows=true -Dskip.macos=false
@@ -40,11 +40,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17
+      - name: Set up JDK 17 with JavaFX
         uses: actions/setup-java@v4
         with:
           java-version: '17'
-          distribution: 'temurin'
+          distribution: 'liberica'  # Liberica JDK includes JavaFX
 
       - name: Build with Maven
         run: mvn clean package -DskipTests -Dskip.linux=true -Dskip.windows=false -Dskip.macos=true
@@ -70,11 +70,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17
+      - name: Set up JDK 17 with JavaFX
         uses: actions/setup-java@v4
         with:
           java-version: '17'
-          distribution: 'temurin'
+          distribution: 'liberica'  # Liberica JDK includes JavaFX
 
       - name: Install Linux dependencies
         run: |

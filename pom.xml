@@ -6,7 +6,7 @@
 
     <groupId>com.ftb</groupId>
     <artifactId>decodekhqr</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1</version>
     <name>decodekhqr</name>
     <packaging>jar</packaging>
 
@@ -184,7 +184,9 @@
                     <mainJar>${project.build.finalName}.jar</mainJar>
                     
                     <!-- Platform-specific icon configuration -->
-                    <icon>${app.icon.linux}</icon>
+                    <!-- Use general icon parameter, jpackage will handle platform-specific formats -->
+                    <icon>${app.icon.macos}</icon>
+                    <!-- Also set platform-specific icons as backup -->
                     <linuxIcon>${app.icon.linux}</linuxIcon>
                     <winIcon>${app.icon.windows}</winIcon>
                     <macIcon>${app.icon.macos}</macIcon>
@@ -202,14 +204,21 @@
                     <winDirChooser>true</winDirChooser>
                     
                     <macPackageName>${app.name}</macPackageName>
+                    <macPackageIdentifier>com.sakcode.decodekhqr</macPackageIdentifier>
                     <macCategory>public.app-category.utilities</macCategory>
                     <macSign>false</macSign> <!-- Set to true for App Store distribution -->
+                    <!-- Remove default entitlements that request microphone access -->
+                    <macEntitlementsFile></macEntitlementsFile>
                     
                     <!-- Java runtime options -->
                     <javaOptions>
                         <option>-Dfile.encoding=UTF-8</option>
                         <option>-Xmx512m</option>
                     </javaOptions>
+                    
+                    <!-- JavaFX configuration -->
+                    <!-- Liberica JDK includes JavaFX modules -->
+                    <!-- For local development with standard JDK, install Liberica JDK Full -->
                     
                     <!-- Resources to include -->
                     <resourceDir>${project.basedir}/src/main/resources</resourceDir>
@@ -273,5 +282,48 @@
             </plugin>
         </plugins>
     </build>
+
+    <!-- Profiles for different JavaFX configurations -->
+    <profiles>
+        <profile>
+            <id>local-javafx-jmods</id>
+            <activation>
+                <property>
+                    <name>javafx.jmods.path</name>
+                </property>
+            </activation>
+            <properties>
+                <javafx.module.path>${javafx.jmods.path}</javafx.module.path>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.panteleyev</groupId>
+                        <artifactId>jpackage-maven-plugin</artifactId>
+                        <configuration>
+                            <modulePath>${javafx.module.path}</modulePath>
+                            <addModules>
+                                <module>javafx.controls</module>
+                                <module>javafx.fxml</module>
+                                <module>javafx.graphics</module>
+                            </addModules>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        
+        <profile>
+            <id>liberica-jdk</id>
+            <activation>
+                <property>
+                    <name>!javafx.jmods.path</name>
+                </property>
+            </activation>
+            <properties>
+                <!-- Liberica JDK includes JavaFX modules -->
+            </properties>
+        </profile>
+    </profiles>
 
 </project>
