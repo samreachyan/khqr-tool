@@ -1,0 +1,158 @@
+name: Build and Release Native Installers
+
+on:
+  push:
+    tags:
+      - 'v*'  # Trigger on version tags like v1.0.0, v2.1.0, etc.
+  workflow_dispatch:  # Allow manual triggering
+
+jobs:
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Build with Maven
+        run: mvn clean package -DskipTests
+
+      - name: Create macOS DMG installer
+        run: |
+          # Run jpackage for macOS
+          mvn jpackage:jpackage@jpackage-macos -DjpackageHome=$JAVA_HOME
+          
+      - name: Upload macOS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-installer
+          path: target/jpackage/*.dmg
+          if-no-files-found: error
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Build with Maven
+        run: mvn clean package -DskipTests
+
+      - name: Create Windows MSI installer
+        run: |
+          # Run jpackage for Windows
+          mvn jpackage:jpackage@jpackage-windows -DjpackageHome=$env:JAVA_HOME
+          
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-installer
+          path: target/jpackage/*.msi
+          if-no-files-found: error
+
+  build-linux:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        package-type: [deb, rpm]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Install Linux dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y fakeroot rpm
+
+      - name: Build with Maven
+        run: mvn clean package -DskipTests
+
+      - name: Create Linux installer (${{ matrix.package-type }})
+        run: |
+          if [ "${{ matrix.package-type }}" = "deb" ]; then
+            mvn jpackage:jpackage@jpackage-linux-deb -DjpackageHome=$JAVA_HOME
+          else
+            mvn jpackage:jpackage@jpackage-linux-rpm -DjpackageHome=$JAVA_HOME
+          fi
+          
+      - name: Upload Linux artifact (${{ matrix.package-type }})
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-${{ matrix.package-type }}-installer
+          path: target/jpackage/*.${{ matrix.package-type }}
+          if-no-files-found: error
+
+  create-release:
+    needs: [build-macos, build-windows, build-linux]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: List downloaded artifacts
+        run: find artifacts -type f
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: Release ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+          files: |
+            artifacts/macos-installer/*.dmg
+            artifacts/windows-installer/*.msi
+            artifacts/linux-deb-installer/*.deb
+            artifacts/linux-rpm-installer/*.rpm
+          body: |
+            # KHQR Tool ${{ github.ref_name }}
+            
+            ## Native Installers
+            
+            ### macOS
+            - **KHQR Tool.dmg** - Double-click to install
+            
+            ### Windows
+            - **KHQR Tool.msi** - Run the installer
+            
+            ### Linux
+            - **KHQR Tool.deb** - For Debian/Ubuntu based systems
+            - **KHQR Tool.rpm** - For RedHat/Fedora based systems
+            
+            ## Installation Instructions
+            
+            1. Download the installer for your operating system
+            2. Run the installer
+            3. Launch KHQR Tool from your applications menu
+            
+            ## Features
+            - Generate KHQR codes
+            - Decode KHQR codes from images
+            - Support for USD and KHR currencies
+            - User-friendly JavaFX interface
+            
+            ## System Requirements
+            - No Java installation required (JRE bundled)
+            - macOS 10.15+, Windows 10+, or Linux with glibc 2.17+
+            
+            ## Changes
+            See the commit history for detailed changes.

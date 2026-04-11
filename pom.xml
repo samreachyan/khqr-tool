@@ -6,12 +6,26 @@
 
     <groupId>com.ftb</groupId>
     <artifactId>decodekhqr</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.0.0</version>
     <name>decodekhqr</name>
+    <packaging>jar</packaging>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <junit.version>5.10.0</junit.version>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
+        <javafx.version>21</javafx.version>
+        <javafx.maven.plugin.version>0.0.8</javafx.maven.plugin.version>
+        <jpackage.maven.plugin.version>1.6.2</jpackage.maven.plugin.version>
+        <main.class>com.sakcode.decodekhqr.MainKHQRApplication</main.class>
+        <app.name>KHQR Tool</app.name>
+        <app.vendor>Sakcode</app.vendor>
+        <app.description>KHQR Code Generator and Decoder</app.description>
+        <app.version>${project.version}</app.version>
+        <app.icon.linux>src/main/resources/icon_64.png</app.icon.linux>
+        <app.icon.macos>src/main/resources/icon_1024.icns</app.icon.macos>
+        <app.icon.windows>src/main/resources/icon-khqr.ico</app.icon.windows>
     </properties>
 
     <dependencies>
@@ -145,8 +159,106 @@
                     </execution>
                 </executions>
             </plugin>
+            
+            <!-- JPackage plugin for creating native installers -->
+            <plugin>
+                <groupId>org.panteleyev</groupId>
+                <artifactId>jpackage-maven-plugin</artifactId>
+                <version>${jpackage.maven.plugin.version}</version>
+                <configuration>
+                    <name>${app.name}</name>
+                    <appVersion>${app.version}</appVersion>
+                    <vendor>${app.vendor}</vendor>
+                    <description>${app.description}</description>
+                    <copyright>Copyright © 2024 ${app.vendor}</copyright>
+                    <licenseFile>LICENSE</licenseFile>
+                    
+                    <!-- Main class configuration -->
+                    <mainClass>${main.class}</mainClass>
+                    <mainJar>${project.build.finalName}.jar</mainJar>
+                    
+                    <!-- Platform-specific icon configuration -->
+                    <icon>${app.icon.linux}</icon>
+                    <linuxIcon>${app.icon.linux}</linuxIcon>
+                    <winIcon>${app.icon.windows}</winIcon>
+                    <macIcon>${app.icon.macos}</macIcon>
+                    
+                    <!-- Platform-specific configuration -->
+                    <linuxPackageName>${project.artifactId}</linuxPackageName>
+                    <linuxMenuGroup>${app.vendor}</linuxMenuGroup>
+                    <linuxAppCategory>Utility</linuxAppCategory>
+                    <linuxShortcut>true</linuxShortcut>
+                    
+                    <winMenu>true</winMenu>
+                    <winMenuGroup>${app.vendor}</winMenuGroup>
+                    <winShortcut>true</winShortcut>
+                    <winPerUserInstall>true</winPerUserInstall>
+                    <winDirChooser>true</winDirChooser>
+                    
+                    <macPackageName>${app.name}</macPackageName>
+                    <macCategory>public.app-category.utilities</macCategory>
+                    <macSign>false</macSign> <!-- Set to true for App Store distribution -->
+                    
+                    <!-- Java runtime options -->
+                    <javaOptions>
+                        <option>-Dfile.encoding=UTF-8</option>
+                        <option>-Xmx512m</option>
+                    </javaOptions>
+                    
+                    <!-- Resources to include -->
+                    <resourceDir>${project.basedir}/src/main/resources</resourceDir>
+                    
+                    <!-- Output directory -->
+                    <destination>${project.build.directory}/jpackage</destination>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>jpackage-linux-deb</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jpackage</goal>
+                        </goals>
+                        <configuration>
+                            <type>linux-deb</type>
+                            <jpackageHome>${env.JAVA_HOME}</jpackageHome>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>jpackage-linux-rpm</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jpackage</goal>
+                        </goals>
+                        <configuration>
+                            <type>linux-rpm</type>
+                            <jpackageHome>${env.JAVA_HOME}</jpackageHome>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>jpackage-windows</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jpackage</goal>
+                        </goals>
+                        <configuration>
+                            <type>msi</type>
+                            <jpackageHome>${env.JAVA_HOME}</jpackageHome>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>jpackage-macos</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jpackage</goal>
+                        </goals>
+                        <configuration>
+                            <type>dmg</type>
+                            <jpackageHome>${env.JAVA_HOME}</jpackageHome>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
-
 
 </project>
