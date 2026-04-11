@@ -26,6 +26,12 @@
         <app.icon.linux>src/main/resources/icon_64.png</app.icon.linux>
         <app.icon.macos>src/main/resources/icon_1024.icns</app.icon.macos>
         <app.icon.windows>src/main/resources/icon-khqr.ico</app.icon.windows>
+        <!-- Skip properties for platform-specific builds -->
+        <skip.linux>true</skip.linux>
+        <skip.linux.deb>${skip.linux}</skip.linux.deb>
+        <skip.linux.rpm>${skip.linux}</skip.linux.rpm>
+        <skip.windows>true</skip.windows>
+        <skip.macos>false</skip.macos>
     </properties>
 
     <dependencies>
@@ -208,6 +214,9 @@
                     <!-- Resources to include -->
                     <resourceDir>${project.basedir}/src/main/resources</resourceDir>
                     
+                    <!-- Input directory with JAR files -->
+                    <input>${project.build.directory}</input>
+                    
                     <!-- Output directory -->
                     <destination>${project.build.directory}/jpackage</destination>
                 </configuration>
@@ -219,8 +228,9 @@
                             <goal>jpackage</goal>
                         </goals>
                         <configuration>
-                            <type>linux-deb</type>
+                            <type>DEB</type>
                             <jpackageHome>${env.JAVA_HOME}</jpackageHome>
+                            <skip>${skip.linux.deb}</skip>
                         </configuration>
                     </execution>
                     <execution>
@@ -230,8 +240,9 @@
                             <goal>jpackage</goal>
                         </goals>
                         <configuration>
-                            <type>linux-rpm</type>
+                            <type>RPM</type>
                             <jpackageHome>${env.JAVA_HOME}</jpackageHome>
+                            <skip>${skip.linux.rpm}</skip>
                         </configuration>
                     </execution>
                     <execution>
@@ -241,8 +252,9 @@
                             <goal>jpackage</goal>
                         </goals>
                         <configuration>
-                            <type>msi</type>
+                            <type>MSI</type>
                             <jpackageHome>${env.JAVA_HOME}</jpackageHome>
+                            <skip>${skip.windows}</skip>
                         </configuration>
                     </execution>
                     <execution>
@@ -252,8 +264,9 @@
                             <goal>jpackage</goal>
                         </goals>
                         <configuration>
-                            <type>dmg</type>
+                            <type>DMG</type>
                             <jpackageHome>${env.JAVA_HOME}</jpackageHome>
+                            <skip>${skip.macos}</skip>
                         </configuration>
                     </execution>
                 </executions>

@@ -63,6 +63,23 @@ mvn javafx:run
 
 # Or run the packaged JAR
 java -jar target/decodekhqr-1.0-SNAPSHOT.jar
+
+## OR
+----
+
+# Build and run application
+mvn clean compile javafx:run
+
+# Build macOS installer
+mvn clean package jpackage:jpackage@jpackage-macos -DskipTests
+
+# Build Windows installer (on Windows)
+mvn clean package jpackage:jpackage@jpackage-windows -DskipTests
+
+# Build Linux installer (on Linux)
+mvn clean package jpackage:jpackage@jpackage-linux-deb -DskipTests
+mvn clean package jpackage:jpackage@jpackage-linux-rpm -DskipTests
+
 ```
 
 ## Creating Native Installers

@@ -78,8 +78,9 @@
               <goal>jpackage</goal>
             </goals>
             <configuration>
-              <type>deb</type>
+              <type>DEB</type>
               <jpackageHome>${env.JAVA_HOME}</jpackageHome>
+              <skip>${skip.linux.deb}</skip>
             </configuration>
           </execution>
           <execution>
@@ -89,8 +90,9 @@
               <goal>jpackage</goal>
             </goals>
             <configuration>
-              <type>rpm</type>
+              <type>RPM</type>
               <jpackageHome>${env.JAVA_HOME}</jpackageHome>
+              <skip>${skip.linux.rpm}</skip>
             </configuration>
           </execution>
           <execution>
@@ -100,8 +102,9 @@
               <goal>jpackage</goal>
             </goals>
             <configuration>
-              <type>msi</type>
+              <type>MSI</type>
               <jpackageHome>${env.JAVA_HOME}</jpackageHome>
+              <skip>${skip.windows}</skip>
             </configuration>
           </execution>
           <execution>
@@ -111,8 +114,9 @@
               <goal>jpackage</goal>
             </goals>
             <configuration>
-              <type>dmg</type>
+              <type>DMG</type>
               <jpackageHome>${env.JAVA_HOME}</jpackageHome>
+              <skip>${skip.macos}</skip>
             </configuration>
           </execution>
         </executions>
@@ -146,6 +150,7 @@
             <option>-Xmx512m</option>
           </javaOptions>
           <resourceDir>${project.basedir}/src/main/resources</resourceDir>
+          <input>${project.build.directory}</input>
           <destination>${project.build.directory}/jpackage</destination>
         </configuration>
       </plugin>
@@ -190,12 +195,17 @@
     </dependency>
   </dependencies>
   <properties>
+    <skip.linux.rpm>${skip.linux}</skip.linux.rpm>
+    <skip.linux>true</skip.linux>
+    <skip.windows>true</skip.windows>
     <app.icon.macos>src/main/resources/icon_1024.icns</app.icon.macos>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <javafx.version>21</javafx.version>
     <app.icon.linux>src/main/resources/icon_64.png</app.icon.linux>
     <junit.version>5.10.0</junit.version>
+    <skip.linux.deb>${skip.linux}</skip.linux.deb>
     <app.name>KHQR Tool</app.name>
+    <skip.macos>false</skip.macos>
     <main.class>com.sakcode.decodekhqr.MainKHQRApplication</main.class>
     <maven.compiler.source>17</maven.compiler.source>
     <javafx.maven.plugin.version>0.0.8</javafx.maven.plugin.version>

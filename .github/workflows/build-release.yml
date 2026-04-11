@@ -20,12 +20,12 @@ jobs:
           distribution: 'temurin'
 
       - name: Build with Maven
-        run: mvn clean package -DskipTests
+        run: mvn clean package -DskipTests -Dskip.linux.deb=true -Dskip.linux.rpm=true -Dskip.windows=true -Dskip.macos=false
 
       - name: Create macOS DMG installer
         run: |
           # Run jpackage for macOS
-          mvn jpackage:jpackage@jpackage-macos -DjpackageHome=$JAVA_HOME
+          mvn jpackage:jpackage@jpackage-macos -DjpackageHome=$JAVA_HOME -Dskip.linux.deb=true -Dskip.linux.rpm=true -Dskip.windows=true -Dskip.macos=false
           
       - name: Upload macOS artifact
         uses: actions/upload-artifact@v4
@@ -47,12 +47,12 @@ jobs:
           distribution: 'temurin'
 
       - name: Build with Maven
-        run: mvn clean package -DskipTests
+        run: mvn clean package -DskipTests -Dskip.linux=true -Dskip.windows=false -Dskip.macos=true
 
       - name: Create Windows MSI installer
         run: |
           # Run jpackage for Windows
-          mvn jpackage:jpackage@jpackage-windows -DjpackageHome=$env:JAVA_HOME
+          mvn jpackage:jpackage@jpackage-windows -DjpackageHome=$env:JAVA_HOME -Dskip.linux=true -Dskip.windows=false -Dskip.macos=true
           
       - name: Upload Windows artifact
         uses: actions/upload-artifact@v4
@@ -82,14 +82,19 @@ jobs:
           sudo apt-get install -y fakeroot rpm
 
       - name: Build with Maven
-        run: mvn clean package -DskipTests
+        run: |
+          if [ "${{ matrix.package-type }}" = "deb" ]; then
+            mvn clean package -DskipTests -Dskip.linux.deb=false -Dskip.linux.rpm=true -Dskip.windows=true -Dskip.macos=true
+          else
+            mvn clean package -DskipTests -Dskip.linux.deb=true -Dskip.linux.rpm=false -Dskip.windows=true -Dskip.macos=true
+          fi
 
       - name: Create Linux installer (${{ matrix.package-type }})
         run: |
           if [ "${{ matrix.package-type }}" = "deb" ]; then
-            mvn jpackage:jpackage@jpackage-linux-deb -DjpackageHome=$JAVA_HOME
+            mvn jpackage:jpackage@jpackage-linux-deb -DjpackageHome=$JAVA_HOME -Dskip.linux.deb=false -Dskip.linux.rpm=true -Dskip.windows=true -Dskip.macos=true
           else
-            mvn jpackage:jpackage@jpackage-linux-rpm -DjpackageHome=$JAVA_HOME
+            mvn jpackage:jpackage@jpackage-linux-rpm -DjpackageHome=$JAVA_HOME -Dskip.linux.deb=true -Dskip.linux.rpm=false -Dskip.windows=true -Dskip.macos=true
           fi
           
       - name: Upload Linux artifact (${{ matrix.package-type }})
