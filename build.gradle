@@ -66,12 +66,14 @@ shadowJar {
     // Exclude module-info to avoid conflicts
     exclude 'module-info.class'
 
-    // Ensure all dependencies are included
+    // Ensure all dependencies are included (including transitive deps)
     dependencies {
         include(dependency('kh.gov.nbc.bakong_khqr:sdk-java:1.0.0.16'))
         include(dependency('com.google.zxing:core:3.5.3'))
         include(dependency('org.apache.commons:commons-lang3:3.20.0'))
         include(dependency('com.fasterxml.jackson.core:jackson-databind:2.18.3'))
+        include(dependency('com.fasterxml.jackson.core:jackson-core:2.18.3'))
+        include(dependency('com.fasterxml.jackson.core:jackson-annotations:2.18.3'))
         include(dependency('org.controlsfx:controlsfx:11.1.2'))
         include(dependency('org.kordamp.bootstrapfx:bootstrapfx-core:0.4.0'))
     }
@@ -88,4 +90,52 @@ task fatJar(type: Jar) {
     }
     with jar
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+// ── Native macOS .app packaging via jpackage ──────────────────────────────────
+// Prerequisites: JDK 21+, shadowJar must be built first.
+// Usage: ./gradlew packageMacApp
+// Output: build/dist/KHQR-Tool.app
+task packageMacApp(type: Exec) {
+    dependsOn shadowJar
+
+    def appName    = 'KHQR-Tool'
+    def jarFile    = shadowJar.archiveFile.get().asFile
+    def iconFile   = file('src/main/resources/icon_1024.icns')
+    def destDir    = file("${buildDir}/dist")
+
+    // JavaFX SDK module JARs — must be on the module path (not classpath)
+    // Stored in project-local lib/ directory (portable, no Gradle cache dependency)
+    def javafxLibDir = file("${projectDir}/lib")
+    def javafxModules = [
+            "${javafxLibDir}/javafx-base-21-mac-aarch64.jar",
+            "${javafxLibDir}/javafx-controls-21-mac-aarch64.jar",
+            "${javafxLibDir}/javafx-graphics-21-mac-aarch64.jar",
+            "${javafxLibDir}/javafx-fxml-21-mac-aarch64.jar"
+    ]
+
+    doFirst {
+        destDir.mkdirs()
+    }
+
+    commandLine = [
+            'jpackage',
+            '--type', 'app-image',
+            '--name', appName,
+            '--app-version', '1.0',
+            '--icon', iconFile.absolutePath,
+            '--input', jarFile.parent,
+            '--main-jar', jarFile.name,
+            '--main-class', 'com.sakcode.decodekhqr.MainKHQRApplication',
+            '--module-path', javafxModules.join(File.pathSeparator),
+            '--add-modules', 'javafx.controls,javafx.fxml',
+            '--dest', destDir.absolutePath
+    ]
+}
+
+// Convenience: build .app then open the result in Finder
+task macApp(dependsOn: packageMacApp) {
+    doLast {
+        println "\n✅ Built: build/dist/KHQR-Tool.app"
+    }
 }
