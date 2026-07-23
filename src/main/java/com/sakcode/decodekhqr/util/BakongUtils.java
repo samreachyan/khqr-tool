@@ -1,7 +1,27 @@
-package com.sakcode.decodekhqr;
+package com.sakcode.decodekhqr.util;
 
 import kh.gov.nbc.bakong_khqr.exception.KHQRException;
-import kh.gov.nbc.bakong_khqr.model.*;
+import kh.gov.nbc.bakong_khqr.model.AdditionalDataField;
+import kh.gov.nbc.bakong_khqr.model.AdditionalDataFieldTemplate;
+import kh.gov.nbc.bakong_khqr.model.CRCValidation;
+import kh.gov.nbc.bakong_khqr.model.Constant;
+import kh.gov.nbc.bakong_khqr.model.IndividualInfo;
+import kh.gov.nbc.bakong_khqr.model.KHQRCurrency;
+import kh.gov.nbc.bakong_khqr.model.KHQRData;
+import kh.gov.nbc.bakong_khqr.model.KHQRDecodeData;
+import kh.gov.nbc.bakong_khqr.model.KHQRDeepLinkData;
+import kh.gov.nbc.bakong_khqr.model.KHQRErrorCode;
+import kh.gov.nbc.bakong_khqr.model.KHQRMerchantType;
+import kh.gov.nbc.bakong_khqr.model.KHQRResponse;
+import kh.gov.nbc.bakong_khqr.model.KHQRStatus;
+import kh.gov.nbc.bakong_khqr.model.KHQRType;
+import kh.gov.nbc.bakong_khqr.model.KHQRValidation;
+import kh.gov.nbc.bakong_khqr.model.MerchantAccountInformation;
+import kh.gov.nbc.bakong_khqr.model.MerchantAccountInformationTemplate;
+import kh.gov.nbc.bakong_khqr.model.MerchantInfo;
+import kh.gov.nbc.bakong_khqr.model.MerchantInformationLanguage;
+import kh.gov.nbc.bakong_khqr.model.MerchantInformationLanguageTemplate;
+import kh.gov.nbc.bakong_khqr.model.SourceInfo;
 import kh.gov.nbc.bakong_khqr.presenter.GenerateDeepLinkPresenter;
 import kh.gov.nbc.bakong_khqr.presenter.MerchantPresentedDecodeMode;
 import kh.gov.nbc.bakong_khqr.presenter.MerchantPresentedMode;
@@ -147,14 +167,14 @@ public class BakongUtils {
     private static void setInvalidQrData(KHQRResponse<KHQRDecodeData> khqrResponse, KHQRStatus khqrStatus) {
         khqrStatus.setErrorCode(8);
         khqrStatus.setCode(Constant.ERROR_CODE);
-        khqrStatus.setMessage((String)KHQRErrorCode.errorCodeMap.get(8));
+        khqrStatus.setMessage(KHQRErrorCode.errorCodeMap.get(8));
         khqrResponse.setKHQRStatus(khqrStatus);
     }
 
     private static void setStatusInvalidQr(KHQRStatus khqrStatus, KHQRResponse<CRCValidation> khqrResponse) {
         khqrStatus.setErrorCode(8);
         khqrStatus.setCode(Constant.ERROR_CODE);
-        khqrStatus.setMessage((String)KHQRErrorCode.errorCodeMap.get(8));
+        khqrStatus.setMessage(KHQRErrorCode.errorCodeMap.get(8));
         khqrResponse.setKHQRStatus(khqrStatus);
     }
 
