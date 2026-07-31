@@ -3,19 +3,26 @@ package com.sakcode.decodekhqr.model;
 import kh.gov.nbc.bakong_khqr.model.KHQRCurrency;
 
 public enum Currency {
-    USD("USD", KHQRCurrency.USD),
-    KHR("KHR", KHQRCurrency.KHR);
+    USD("USD", "$", KHQRCurrency.USD),
+    KHR("KHR", "៛", KHQRCurrency.KHR);
 
     private final String display;
+    private final String symbol;
     private final KHQRCurrency khqrCurrency;
 
-    Currency(String display, KHQRCurrency khqrCurrency) {
+    Currency(String display, String symbol, KHQRCurrency khqrCurrency) {
         this.display = display;
+        this.symbol = symbol;
         this.khqrCurrency = khqrCurrency;
     }
 
     public String display() {
         return display;
+    }
+
+    /** Currency symbol, per the KHQR Card Guideline's "Symbol usage" section. */
+    public String symbol() {
+        return symbol;
     }
 
     public String code() {

@@ -1,0 +1,48 @@
+.app-root {
+    -app-bg: #F5F6FA;
+    -app-surface: #FFFFFF;
+    -app-text: #1F2430;
+    -app-text-muted: #6B7280;
+    -app-border: #E4E7EC;
+    -app-accent: #4F46E5;
+    -app-accent-soft: #EEF2FF;
+    -app-danger: #DC2626;
+    -app-success: #16A34A;
+
+    -fx-background-color: -app-bg;
+}
+
+.app-root .label {
+    -fx-text-fill: -app-text;
+}
+
+.text-field, .text-area, .combo-box {
+    -fx-background-color: -app-surface;
+    -fx-border-color: -app-border;
+    -fx-text-fill: -app-text;
+}
+
+.text-area .content {
+    -fx-background-color: -app-surface;
+}
+
+.combo-box .list-cell {
+    -fx-text-fill: -app-text;
+    -fx-background-color: -app-surface;
+}
+
+.split-pane {
+    -fx-background-color: -app-bg;
+}
+
+.app-tabs .tab-header-background {
+    -fx-background-color: -app-bg;
+}
+
+.app-tabs .tab {
+    -fx-background-color: -app-bg;
+}
+
+.app-tabs .tab:selected {
+    -fx-background-color: -app-surface;
+}
