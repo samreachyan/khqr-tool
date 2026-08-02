@@ -1,226 +1,130 @@
-# KHQR Tool - Cross-Platform Desktop Application
+# KHQR Tool
 
-A JavaFX desktop application for generating and decoding KHQR codes with native installer support for macOS, Windows, and Linux.
+A JavaFX desktop application for generating and decoding [Bakong KHQR](https://bakong.nbc.gov.kh/) codes, with a branded QR card preview built to the official KHQR Card Appearance Guideline.
 
-## Features
+## Key Features
 
-- **Generate KHQR Codes**: Create KHQR codes for payments
-- **Decode KHQR Codes**: Decode KHQR codes from images or text
-- **Cross-Platform**: Native installers for macOS (.dmg), Windows (.msi), and Linux (.deb/.rpm)
-- **No Java Required**: Bundled JRE included in installers
-- **User-Friendly Interface**: Modern JavaFX GUI with intuitive controls
+- **Generate KHQR codes** for both individual (remittance) and merchant payments, with full control over merchant info, currency, amount, and optional fields (bill number, store/terminal label, mobile number).
+- **Decode KHQR codes** from raw text, a picked image file, or drag-and-drop — decoding also verifies the CRC and reports whether the code is valid.
+- **On-brand QR card preview** (`KhqrCardView`) laid out to the KHQR Card Guideline's 20:29 ratio, header proportions, margins, and dashed divider, with a currency badge (USD `$` / KHR `៛`) centered on the QR. The card is built fresh from the decoded/generated payload — it never renders a dropped file's own image.
+- **Smart amount formatting**: thousands are grouped, and decimals are padded to the currency's minor units without forcing them — `100` stays `100`, `100.3` becomes `100.30` in USD.
+- **The card stays hidden** until a QR actually exists, and disappears again on Clear or on error — no empty frame.
+- **Copy QR text, copy response JSON, and save the card as a PNG.**
+- **Light/dark theme toggle.**
+- **Field validation** with inline errors before generating a code.
 
 ## System Requirements
 
-- **Development**: JDK 17+ with JavaFX modules
-- **Runtime**: No Java installation required (JRE bundled)
-- **Operating Systems**:
-  - macOS 10.15+
-  - Windows 10+
-  - Linux (glibc 2.17+)
+- **Development**: JDK 21+
+- **Runtime**: JDK 21+ (or a bundled JRE if packaged with `jpackage`, see below)
+- **Operating Systems**: macOS, Windows, Linux (anywhere JavaFX 21 runs)
 
 ## Project Structure
 
 ```
 khqr-tool/
 ├── src/main/java/com/sakcode/decodekhqr/
-│   ├── MainKHQRApplication.java    # Main JavaFX application
-│   └── BakongUtils.java            # KHQR utility functions
+│   ├── MainKHQRApplication.java     # JavaFX entry point, scene + theme wiring
+│   ├── khqr/
+│   │   ├── KhqrService.java         # Generate/decode facade over the Bakong SDK
+│   │   └── KhqrFormMapper.java      # Form fields ↔ SDK request/response objects
+│   ├── model/
+│   │   ├── Currency.java            # USD/KHR, minor units, KHQR SDK mapping
+│   │   └── MerchantType.java        # Remittance (individual) vs Merchant
+│   ├── qr/
+│   │   ├── QrImageCodec.java        # ZXing-based QR encode/decode
+│   │   └── PngImageWriter.java      # Dependency-free PNG export for the card
+│   ├── ui/
+│   │   ├── KhqrFormView.java        # Scene graph: Generate/Decode tabs + preview panel
+│   │   ├── KhqrFormController.java  # Wires buttons/drag-drop to KhqrService
+│   │   ├── KhqrCardView.java        # The branded KHQR card, per the guideline
+│   │   ├── FormValidator.java       # Field validation before generation
+│   │   ├── FormDefaults.java        # Default values for the Generate form
+│   │   ├── SvgIcon.java             # Minimal SVG-path loader for the header logo
+│   │   └── Theme.java               # Light/dark stylesheet pair
+│   └── util/
+│       ├── BakongUtils.java         # Builds the raw KHQR payload string
+│       └── Timestamps.java          # Created/expires timestamp formatting
 ├── src/main/resources/
-│   ├── icon_64.png                 # Linux application icon
-│   ├── icon_1024.icns              # macOS application icon
-│   └── icon-khqr.ico               # Windows application icon
-├── pom.xml                         # Maven build configuration
-├── .github/workflows/
-│   └── build-release.yml           # GitHub Actions CI/CD
-└── LICENSE                         # MIT License
+│   ├── css/                         # base + light/dark theme stylesheets
+│   ├── khqr-assets/                 # KHQR wordmark SVGs, currency badge PNGs
+│   └── icon_64.png / icon_1024.icns / icon-khqr.ico
+├── build.gradle                     # Gradle build, shadow JAR, macOS jpackage task
+└── LICENSE
 ```
 
 ## Quick Start
 
-### 1. Prerequisites
+### Prerequisites
 
-- **JDK 17+** (with JavaFX support)
-- **Maven 3.6+**
-- **Git** (for version control)
+- **JDK 21+**
+- **Git**
 
-### 2. Clone and Build
+Gradle itself does not need to be installed — the project ships the Gradle wrapper (`gradlew`).
+
+### Clone and Run
 
 ```bash
-# Clone the repository
 git clone https://github.com/samreachyan/khqr-tool.git
 cd khqr-tool
 
-# Build the project
-mvn clean package
+# Run directly
+./gradlew run
+
+# Or build a fat jar and run it
+./gradlew shadowJar
+java -jar build/libs/decodekhqr-1.0-SNAPSHOT.jar
 ```
 
-### 3. Run the Application
+### Run Tests
 
 ```bash
-# Run directly with Maven
-mvn javafx:run
-
-# Or run the packaged JAR
-java -jar target/decodekhqr-1.0-SNAPSHOT.jar
-
-## OR
-----
-
-# Build and run application
-mvn clean compile javafx:run
-
-# Build macOS installer
-mvn clean package jpackage:jpackage@jpackage-macos -DskipTests
-
-# Build Windows installer (on Windows)
-mvn clean package jpackage:jpackage@jpackage-windows -DskipTests
-
-# Build Linux installer (on Linux)
-mvn clean package jpackage:jpackage@jpackage-linux-deb -DskipTests
-mvn clean package jpackage:jpackage@jpackage-linux-rpm -DskipTests
-
+./gradlew test
 ```
 
-## Creating Native Installers
+## Building a Distributable
 
-### Local Build (Platform-Specific)
+### Fat JAR (any platform)
 
-#### macOS (.dmg)
 ```bash
-mvn clean package jpackage:jpackage@jpackage-macos
-# Installer will be at: target/jpackage/KHQR Tool-1.0-SNAPSHOT.dmg
+./gradlew shadowJar
+# Output: build/libs/decodekhqr-1.0-SNAPSHOT.jar
 ```
 
-#### Windows (.msi)
+The shadow JAR bundles all runtime dependencies (Bakong KHQR SDK, ZXing, Jackson, Commons Lang, ControlsFX, BootstrapFX) — it just needs a JDK 21+ with JavaFX available to run.
+
+### macOS `.app` via jpackage
+
 ```bash
-mvn clean package jpackage:jpackage@jpackage-windows
-# Installer will be at: target/jpackage/KHQR Tool-1.0-SNAPSHOT.msi
+./gradlew packageMacApp
+# Output: build/dist/KHQR-Tool.app
 ```
 
-#### Linux (.deb for Debian/Ubuntu)
-```bash
-mvn clean package jpackage:jpackage@jpackage-linux-deb
-# Installer will be at: target/jpackage/decodekhqr_1.0-SNAPSHOT-1_amd64.deb
-```
-
-#### Linux (.rpm for RedHat/Fedora)
-```bash
-mvn clean package jpackage:jpackage@jpackage-linux-rpm
-# Installer will be at: target/jpackage/decodekhqr-1.0-SNAPSHOT-1.x86_64.rpm
-```
-
-### Automated Builds with GitHub Actions
-
-The project includes a GitHub Actions workflow that automatically builds installers for all platforms when you push a version tag:
-
-1. **Create a version tag**:
-   ```bash
-   git tag v1.0.0
-   git push origin v1.0.0
-   ```
-
-2. **GitHub Actions will**:
-   - Build on macOS, Windows, and Linux runners
-   - Create native installers for each platform
-   - Create a GitHub Release with all installers
-   - Upload installers as release assets
-
-3. **Download installers** from the GitHub Releases page
-
-## Platform-Specific Notes
-
-### macOS
-- **Icon**: Uses `icon_1024.icns` (already included)
-- **Installation**: Double-click the `.dmg` file and drag to Applications
-- **Signing**: For App Store distribution, set `<macSign>true</macSign>` in pom.xml
-
-### Windows
-- **Icon**: Uses `icon-khqr.ico` (already included)
-- **Installation**: Run the `.msi` installer
-- **Shortcuts**: Creates Start Menu and Desktop shortcuts
-- **Registry**: Adds uninstaller entry in Windows Programs and Features
-
-### Linux
-- **Icons**: Uses `icon_64.png` (already included)
-- **Dependencies**: Requires `fakeroot` and `rpm` for building (installed automatically in CI)
-- **Package Managers**:
-  - `.deb` for Debian/Ubuntu: `sudo dpkg -i khqr-tool.deb`
-  - `.rpm` for RedHat/Fedora: `sudo rpm -i khqr-tool.rpm`
-- **Application Menu**: Added to Utilities category
+This depends on `shadowJar` and needs the JavaFX SDK's platform-specific module JARs present in `lib/` (already checked into this project for `mac-aarch64`). For other platforms, add the equivalent `jpackage` task to `build.gradle` with that platform's JavaFX module JARs.
 
 ## Customization
 
-### Changing Application Icons
+### Application icon and title
 
-Replace the icon files in `src/main/resources/`:
-- `icon_64.png` - Linux icon (64x64 PNG)
-- `icon_1024.icns` - macOS icon (1024x1024 ICNS)
-- `icon-khqr.ico` - Windows icon (multiple sizes in ICO format)
+- Icons live in `src/main/resources/` (`icon_64.png`, `icon_1024.icns`, `icon-khqr.ico`); swap them and update `packageMacApp` in `build.gradle` for `.app` icon.
+- Window title is set in `MainKHQRApplication.start()`.
 
-### Updating Application Metadata
+### Generate form defaults
 
-Edit the properties in `pom.xml`:
-```xml
-<app.name>KHQR Tool</app.name>
-<app.vendor>Sakcode</app.vendor>
-<app.description>KHQR Code Generator and Decoder</app.description>
-<app.version>${project.version}</app.version>
-```
+Edit `src/main/java/com/sakcode/decodekhqr/ui/FormDefaults.java` to change what pre-fills the Generate tab (Bakong account ID, acquiring bank, merchant category code, etc.).
 
-### Adding Dependencies
+### KHQR card appearance
 
-Add new dependencies to the `<dependencies>` section in `pom.xml`. For non-modular JARs, the build automatically handles them via classpath.
+`KhqrCardView.java` expresses every dimension as a fraction of the card height, matching the KHQR Card Appearance Guideline (header height, margins, text baselines, badge size). Adjust the constants at the top of the class rather than the layout code.
 
 ## Troubleshooting
 
-### Common Issues
+1. **"Module not found" / JavaFX errors when running the jar directly** — run via `./gradlew run` (which wires the JavaFX module path for you), or add `--module-path`/`--add-modules` flags matching the JavaFX SDK version used to build.
+2. **`packageMacApp` fails: missing JavaFX module jars** — ensure the four `javafx-*-21-mac-aarch64.jar` files exist under `lib/`, matching your CPU architecture.
+3. **Decoding a QR image fails** — the ZXing reader needs a QR code with a clean quiet zone; heavily compressed or cropped screenshots can fail to decode.
 
-1. **"Module not found" errors**
-   - Ensure all dependencies are in the pom.xml
-   - Non-modular JARs work automatically with classpath mode
+## Contributing
 
-2. **jpackage fails on Linux**
-   - Install required packages: `sudo apt-get install fakeroot rpm`
-   - Ensure you're using JDK 14+ with jpackage support
-
-3. **Application doesn't start after installation**
-   - Check system requirements (64-bit OS required)
-   - Ensure antivirus isn't blocking the application
-   - Try running from terminal for error messages
-
-4. **JavaFX not found**
-   - JavaFX dependencies are included via Maven
-   - No separate JavaFX SDK installation needed
-
-### Building for Specific Platforms
-
-To build installers for a specific platform only, run the corresponding jpackage execution:
-```bash
-# macOS only
-mvn clean package jpackage:jpackage@jpackage-macos
-
-# Windows only  
-mvn clean package jpackage:jpackage@jpackage-windows
-
-# Linux DEB only
-mvn clean package jpackage:jpackage@jpackage-linux-deb
-
-# Linux RPM only
-mvn clean package jpackage:jpackage@jpackage-linux-rpm
-```
-
-## Development
-
-### Running Tests
-```bash
-mvn test
-```
-
-### Code Style
-The project follows standard Java coding conventions. Use the provided Maven plugins for code quality checks.
-
-### Contributing
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
@@ -228,16 +132,10 @@ The project follows standard Java coding conventions. Use the provided Maven plu
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) file for details.
+MIT License — see [LICENSE](LICENSE) file for details.
 
 ## Support
 
 For issues, questions, or contributions:
 - Create an issue on GitHub
 - Contact: @samreachyan
-
----
-
-**Built with**: Java 17, JavaFX, Maven, jpackage, GitHub Actions
-
-**Last Updated**: November 2024
