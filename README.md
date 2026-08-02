@@ -13,6 +13,12 @@ A JavaFX desktop application for generating and decoding [Bakong KHQR](https://b
 - **Light/dark theme toggle.**
 - **Field validation** with inline errors before generating a code.
 
+## Screenshots
+
+| Generate | Decode |
+|---|---|
+| ![Generate KHQR](image/generate.png) | ![Decode KHQR](image/decode.png) |
+
 ## System Requirements
 
 - **Development**: JDK 21+
