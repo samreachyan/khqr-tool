@@ -1,0 +1,255 @@
+.app-root {
+    -fx-font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+}
+
+.toolbar {
+    -fx-padding: 16 24;
+    -fx-background-color: -app-surface;
+    -fx-border-color: transparent transparent -app-border transparent;
+    -fx-border-width: 0 0 1 0;
+}
+
+.app-title {
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -app-text;
+}
+
+.app-subtitle {
+    -fx-font-size: 12px;
+    -fx-text-fill: -app-text-muted;
+}
+
+.split-pane {
+    -fx-background-color: -app-bg;
+    -fx-padding: 0;
+}
+
+.split-pane > .split-pane-divider {
+    -fx-background-color: -app-border;
+    -fx-padding: 0 1 0 1;
+}
+
+.app-tabs .tab-header-area {
+    -fx-padding: 10 10 0 16;
+}
+
+.app-tabs .tab {
+    -fx-background-radius: 8 8 0 0;
+    -fx-padding: 8 18;
+}
+
+.app-tabs .tab-label {
+    -fx-font-weight: 600;
+}
+
+/* Selected tab gets a subtle accent underline instead of the default focus ring. */
+.app-tabs .tab:selected .tab-container {
+    -fx-border-color: transparent transparent -app-accent transparent;
+    -fx-border-width: 0 0 2 0;
+}
+
+.app-tabs .tab .focus-indicator,
+.app-tabs .tab:selected .focus-indicator {
+    -fx-border-width: 0;
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+}
+
+.tab-content {
+    -fx-padding: 20;
+    -fx-background-color: -app-surface;
+}
+
+.result-panel {
+    -fx-spacing: 12;
+}
+
+.panel-header {
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -app-text;
+}
+
+.field-label {
+    -fx-font-size: 12px;
+    -fx-font-weight: 600;
+    -fx-text-fill: -app-text-muted;
+}
+
+.form-grid {
+    -fx-padding: 4 4 16 4;
+}
+
+.text-field, .text-area, .combo-box {
+    -fx-background-radius: 6;
+    -fx-border-radius: 6;
+    -fx-border-width: 1;
+}
+
+.text-area .content {
+    -fx-background-radius: 6;
+}
+
+.button-row {
+    -fx-padding: 4 0 0 0;
+}
+
+.button {
+    -fx-background-radius: 6;
+    -fx-padding: 8 18;
+    -fx-cursor: hand;
+    -fx-font-weight: 600;
+}
+
+.primary-button {
+    -fx-background-color: -app-accent;
+    -fx-text-fill: white;
+}
+
+.primary-button:hover {
+    -fx-opacity: 0.92;
+}
+
+.primary-button:armed {
+    -fx-opacity: 0.8;
+}
+
+.secondary-button {
+    -fx-background-color: transparent;
+    -fx-border-color: -app-border;
+    -fx-border-width: 1;
+    -fx-border-radius: 6;
+    -fx-text-fill: -app-text;
+}
+
+.secondary-button:hover {
+    -fx-background-color: -app-accent-soft;
+}
+
+.icon-button {
+    -fx-background-color: -app-accent-soft;
+    -fx-text-fill: -app-accent;
+    -fx-padding: 6 14;
+    -fx-font-size: 12px;
+}
+
+.icon-button:hover {
+    -fx-opacity: 0.85;
+}
+
+.image-box {
+    -fx-padding: 12;
+    -fx-background-color: -app-bg;
+    -fx-background-radius: 10;
+    -fx-min-height: 260;
+}
+
+.status-label {
+    -fx-font-size: 13px;
+    -fx-text-fill: -app-text-muted;
+}
+
+.status-error {
+    -fx-text-fill: -app-danger;
+    -fx-font-weight: 600;
+}
+
+.status-success {
+    -fx-text-fill: -app-success;
+    -fx-font-weight: 600;
+}
+
+.field-error {
+    -fx-border-color: -app-danger;
+    -fx-border-width: 1.5;
+    -fx-border-radius: 6;
+}
+
+.drop-zone {
+    -fx-border-color: -app-border;
+    -fx-border-width: 2;
+    -fx-border-style: segments(8, 6);
+    -fx-border-radius: 10;
+    -fx-background-radius: 10;
+    -fx-background-color: -app-bg;
+    -fx-min-height: 140;
+}
+
+.drop-zone-active {
+    -fx-border-color: -app-accent;
+    -fx-background-color: -app-accent-soft;
+}
+
+.drop-zone-icon {
+    -fx-font-size: 24px;
+    -fx-text-fill: -app-accent;
+}
+
+.drop-zone-label {
+    -fx-font-size: 13px;
+    -fx-font-weight: 600;
+    -fx-text-fill: -app-text;
+}
+
+.drop-zone-hint {
+    -fx-font-size: 11px;
+    -fx-text-fill: -app-text-muted;
+}
+
+/* ── Modern thin scrollbars (used by the ScrollPane and TextAreas) ──────────── */
+
+.scroll-bar {
+    -fx-background-color: transparent;
+}
+
+.scroll-bar:vertical {
+    -fx-pref-width: 10;
+}
+
+.scroll-bar:horizontal {
+    -fx-pref-height: 10;
+}
+
+.scroll-bar .track,
+.scroll-bar .track-background {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-background-radius: 0;
+}
+
+.scroll-bar .thumb {
+    -fx-background-color: -app-border;
+    -fx-background-radius: 10;
+    -fx-background-insets: 2;
+}
+
+.scroll-bar .thumb:hover {
+    -fx-background-color: -app-text-muted;
+}
+
+.scroll-bar .thumb:pressed {
+    -fx-background-color: -app-accent;
+}
+
+.scroll-bar .increment-button,
+.scroll-bar .decrement-button {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+    -fx-pref-width: 0;
+    -fx-pref-height: 0;
+}
+
+.scroll-bar .increment-arrow,
+.scroll-bar .decrement-arrow {
+    -fx-shape: " ";
+    -fx-padding: 0;
+}
+
+.scroll-pane {
+    -fx-background-color: transparent;
+}
+
+.scroll-pane > .viewport {
+    -fx-background-color: transparent;
+}

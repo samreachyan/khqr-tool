@@ -70,8 +70,6 @@ public final class KhqrFormMapper {
     }
 
     public static void applyDecodedData(KHQRDecodeData data, KhqrFormFields fields) {
-        fields.payloadFormatIndicatorInput().setText(data.getPayloadFormatIndicator());
-        fields.pointOfInitiationInput().setValue(data.getPointOfInitiationMethod());
         fields.merchantTypeInput().setValue(MerchantType.fromCode(data.getMerchantType()).display());
         fields.bakongAccountIdInput().setText(data.getBakongAccountID());
         fields.merchantIdInput().setText(data.getMerchantId());

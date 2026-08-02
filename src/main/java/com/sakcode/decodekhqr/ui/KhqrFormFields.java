@@ -7,8 +7,6 @@ import javafx.scene.control.TextField;
 import javafx.scene.image.ImageView;
 
 public record KhqrFormFields(
-        TextField payloadFormatIndicatorInput,
-        ComboBox<String> pointOfInitiationInput,
         ComboBox<String> merchantTypeInput,
         TextField bakongAccountIdInput,
         TextField merchantIdInput,
