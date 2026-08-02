@@ -56,8 +56,7 @@ public final class KhqrFormView {
         splitPane.setDividerPositions(0.55);
         root.setCenter(splitPane);
 
-        KhqrFormFields fields = new KhqrFormFields(generateTab.payloadFormatIndicatorInput(),
-                generateTab.pointOfInitiationInput(), generateTab.merchantTypeInput(),
+        KhqrFormFields fields = new KhqrFormFields(generateTab.merchantTypeInput(),
                 generateTab.bakongAccountIdInput(), generateTab.merchantIdInput(),
                 generateTab.accountInformationInput(), generateTab.acquiringBankInput(),
                 generateTab.merchantCategoryCodeInput(), generateTab.countryCodeInput(),
@@ -90,8 +89,7 @@ public final class KhqrFormView {
         return toolbar;
     }
 
-    private record GenerateTab(Node content, TextField payloadFormatIndicatorInput,
-                                ComboBox<String> pointOfInitiationInput, ComboBox<String> merchantTypeInput,
+    private record GenerateTab(Node content, ComboBox<String> merchantTypeInput,
                                 TextField bakongAccountIdInput, TextField merchantIdInput,
                                 TextField accountInformationInput, TextField acquiringBankInput,
                                 TextField merchantCategoryCodeInput, TextField countryCodeInput,
@@ -114,15 +112,6 @@ public final class KhqrFormView {
         inputColumn.setHgrow(Priority.ALWAYS);
         inputColumn.setPercentWidth(60);
         grid.getColumnConstraints().addAll(labelColumn, inputColumn);
-
-        TextField payloadFormatIndicatorInput = new TextField(FormDefaults.PAYLOAD_FORMAT_INDICATOR);
-        payloadFormatIndicatorInput.setDisable(true);
-
-        ComboBox<String> pointOfInitiationInput = new ComboBox<>();
-        pointOfInitiationInput.getItems().addAll("11", "12");
-        pointOfInitiationInput.setValue(FormDefaults.POINT_OF_INITIATION);
-        pointOfInitiationInput.setDisable(true);
-        pointOfInitiationInput.setMaxWidth(Double.MAX_VALUE);
 
         ComboBox<String> merchantTypeInput = new ComboBox<>();
         for (MerchantType merchantType : MerchantType.values()) {
@@ -160,8 +149,6 @@ public final class KhqrFormView {
 
         int row = 0;
         addRow(grid, row++, "QR Type", merchantTypeInput);
-        addRow(grid, row++, "Payload Format Indicator", payloadFormatIndicatorInput);
-        addRow(grid, row++, "Point of Initiation Method", pointOfInitiationInput);
         addRow(grid, row++, "Bakong Account ID", bakongAccountIdInput);
         addRow(grid, row++, "Merchant ID", merchantIdInput);
         addRow(grid, row++, "Account Information", accountInformationInput);
@@ -194,7 +181,7 @@ public final class KhqrFormView {
         VBox content = new VBox(12, scrollPane, buttonRow);
         content.getStyleClass().add("tab-content");
 
-        return new GenerateTab(content, payloadFormatIndicatorInput, pointOfInitiationInput, merchantTypeInput,
+        return new GenerateTab(content, merchantTypeInput,
                 bakongAccountIdInput, merchantIdInput, accountInformationInput, acquiringBankInput,
                 merchantCategoryCodeInput, countryCodeInput, merchantNameInput, merchantCityInput,
                 transactionCurrencyInput, transactionAmountInput, billNumberInput, storeLabelInput,
@@ -251,7 +238,7 @@ public final class KhqrFormView {
         Label header = new Label("QR Preview");
         header.getStyleClass().add("panel-header");
 
-        KhqrCardView card = new KhqrCardView(260);
+        KhqrCardView card = new KhqrCardView(280);
 
         VBox imageBox = new VBox(card);
         imageBox.setAlignment(Pos.CENTER);

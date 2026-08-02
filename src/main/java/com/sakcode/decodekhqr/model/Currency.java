@@ -3,16 +3,16 @@ package com.sakcode.decodekhqr.model;
 import kh.gov.nbc.bakong_khqr.model.KHQRCurrency;
 
 public enum Currency {
-    USD("USD", "$", KHQRCurrency.USD),
-    KHR("KHR", "៛", KHQRCurrency.KHR);
+    USD("USD", 2, KHQRCurrency.USD),
+    KHR("KHR", 0, KHQRCurrency.KHR);
 
     private final String display;
-    private final String symbol;
+    private final int minorUnits;
     private final KHQRCurrency khqrCurrency;
 
-    Currency(String display, String symbol, KHQRCurrency khqrCurrency) {
+    Currency(String display, int minorUnits, KHQRCurrency khqrCurrency) {
         this.display = display;
-        this.symbol = symbol;
+        this.minorUnits = minorUnits;
         this.khqrCurrency = khqrCurrency;
     }
 
@@ -20,9 +20,9 @@ public enum Currency {
         return display;
     }
 
-    /** Currency symbol, per the KHQR Card Guideline's "Symbol usage" section. */
-    public String symbol() {
-        return symbol;
+    /** Decimal places the currency subdivides into: cents for USD, none for riel. */
+    public int minorUnits() {
+        return minorUnits;
     }
 
     public String code() {

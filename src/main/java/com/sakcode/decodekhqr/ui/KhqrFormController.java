@@ -176,13 +176,17 @@ public final class KhqrFormController {
         });
     }
 
+    /**
+     * Reads the QR out of a dropped or chosen file. The file's own artwork never reaches the card —
+     * the frame always shows a QR re-encoded from the decoded payload, so it stays on-brand
+     * whatever the source image looked like.
+     */
     private void handleImageFile(File file) {
         try {
-            Image qrImage = new Image(file.toURI().toString());
-            fields.qrImageView().setImage(qrImage);
-            String decodedText = qrImageCodec.decode(qrImage);
+            String decodedText = qrImageCodec.decode(new Image(file.toURI().toString()));
             fields.qrCodeInput().setText(decodedText);
             applyDecodeOutcome(khqrService.decodeAndVerify(decodedText));
+            fields.qrImageView().setImage(qrImageCodec.encode(decodedText, 400, 400));
         } catch (Exception ex) {
             showError(ex.getMessage());
         }
