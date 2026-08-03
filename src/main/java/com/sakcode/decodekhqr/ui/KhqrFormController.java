@@ -7,14 +7,19 @@ import com.sakcode.decodekhqr.model.MerchantType;
 import com.sakcode.decodekhqr.qr.PngImageWriter;
 import com.sakcode.decodekhqr.qr.QrImageCodec;
 import com.sakcode.decodekhqr.util.Timestamps;
+import javafx.geometry.Bounds;
 import javafx.scene.Node;
 import javafx.scene.SnapshotParameters;
+import javafx.scene.canvas.Canvas;
+import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.image.Image;
 import javafx.scene.image.WritableImage;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
 import javafx.scene.input.Dragboard;
 import javafx.scene.input.TransferMode;
+import javafx.scene.paint.Color;
+import javafx.scene.transform.Scale;
 import javafx.stage.FileChooser;
 import org.apache.commons.lang3.StringUtils;
 
@@ -23,6 +28,13 @@ import java.util.List;
 
 /** Wires the form's buttons to {@link KhqrService}/{@link QrImageCodec} and reflects results back onto the UI. */
 public final class KhqrFormController {
+
+    /** Fixed output size for "Save Image" — the card is scaled up and centered to exactly fill this. */
+    private static final double EXPORT_WIDTH = 750;
+    private static final double EXPORT_HEIGHT = 1200;
+
+    /** QR resolution re-encoded for export, well above what the small on-screen preview needs. */
+    private static final int EXPORT_QR_RESOLUTION = 1000;
 
     private final KhqrFormView.Layout layout;
     private final KhqrFormFields fields;
@@ -148,12 +160,54 @@ public final class KhqrFormController {
             return;
         }
         try {
-            WritableImage snapshot = card.snapshot(new SnapshotParameters(), null);
-            PngImageWriter.write(snapshot, file);
+            PngImageWriter.write(renderExportImage(), file);
             setStatus("Saved QR image to " + file.getName(), false);
         } catch (Exception ex) {
             showError("Failed to save image: " + ex.getMessage());
         }
+    }
+
+    /**
+     * Renders the card at export quality onto a fixed {@code 750x1200} canvas: the QR is
+     * re-encoded at {@value #EXPORT_QR_RESOLUTION}px (the live preview only needs 400px, which
+     * would look soft blown up this far), the whole card is scaled up as large as it fits without
+     * distorting its 20:29 ratio, and centered on a white canvas so every export is exactly the
+     * same size regardless of the on-screen preview's pixel dimensions.
+     */
+    private WritableImage renderExportImage() throws Exception {
+        String qrText = fields.qrCodeInput().getText();
+        Image liveQrImage = fields.qrImageView().getImage();
+        if (StringUtils.isBlank(qrText)) {
+            return renderCardAt(EXPORT_WIDTH, EXPORT_HEIGHT);
+        }
+
+        fields.qrImageView().setImage(qrImageCodec.encode(qrText, EXPORT_QR_RESOLUTION, EXPORT_QR_RESOLUTION));
+        try {
+            return renderCardAt(EXPORT_WIDTH, EXPORT_HEIGHT);
+        } finally {
+            fields.qrImageView().setImage(liveQrImage);
+        }
+    }
+
+    private WritableImage renderCardAt(double canvasWidth, double canvasHeight) {
+        // boundsInLocal (not getWidth/getHeight) includes the card's drop shadow, which the
+        // snapshot transform below scales along with everything else.
+        Bounds bounds = card.getBoundsInLocal();
+        double scale = Math.min(canvasWidth / bounds.getWidth(), canvasHeight / bounds.getHeight());
+        SnapshotParameters cardParams = new SnapshotParameters();
+        cardParams.setTransform(new Scale(scale, scale));
+        cardParams.setFill(Color.WHITE);
+        Image scaledCard = card.snapshot(cardParams, null);
+
+        Canvas canvas = new Canvas(canvasWidth, canvasHeight);
+        GraphicsContext gc = canvas.getGraphicsContext2D();
+        gc.setFill(Color.WHITE);
+        gc.fillRect(0, 0, canvasWidth, canvasHeight);
+        gc.drawImage(scaledCard, (canvasWidth - scaledCard.getWidth()) / 2, (canvasHeight - scaledCard.getHeight()) / 2);
+
+        SnapshotParameters canvasParams = new SnapshotParameters();
+        canvasParams.setFill(Color.WHITE);
+        return canvas.snapshot(canvasParams, new WritableImage((int) canvasWidth, (int) canvasHeight));
     }
 
     private void wireDropZone(Node dropZone) {
