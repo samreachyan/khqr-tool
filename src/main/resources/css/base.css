@@ -253,3 +253,57 @@
 .scroll-pane > .viewport {
     -fx-background-color: transparent;
 }
+
+/* ── History list ───────────────────────────────────────────────────────────── */
+
+.history-list {
+    -fx-background-color: -app-bg;
+    -fx-background-radius: 10;
+    -fx-border-color: -app-border;
+    -fx-border-radius: 10;
+    -fx-border-width: 1;
+    -fx-padding: 4;
+}
+
+.history-list .list-cell {
+    -fx-padding: 10 12;
+    -fx-background-color: transparent;
+    -fx-border-color: transparent transparent -app-border transparent;
+    -fx-border-width: 0 0 1 0;
+    -fx-text-fill: -app-text;
+    -fx-font-size: 12px;
+}
+
+.history-list .list-cell:last-visible {
+    -fx-border-width: 0;
+}
+
+.history-list .list-cell:hover {
+    -fx-background-color: -app-accent-soft;
+    -fx-background-radius: 6;
+}
+
+.history-list .list-cell:selected {
+    -fx-background-color: -app-accent;
+    -fx-background-radius: 6;
+    -fx-text-fill: white;
+}
+
+/* ── Countdown label ────────────────────────────────────────────────────────── */
+
+.countdown-label {
+    -fx-font-size: 13px;
+    -fx-font-family: "SF Mono", "Courier New", monospace;
+    -fx-text-fill: -app-text-muted;
+    -fx-alignment: center;
+}
+
+/* ── Webcam preview ─────────────────────────────────────────────────────────── */
+
+.webcam-preview {
+    -fx-background-color: -app-bg;
+    -fx-background-radius: 10;
+    -fx-border-color: -app-border;
+    -fx-border-radius: 10;
+    -fx-border-width: 1;
+}

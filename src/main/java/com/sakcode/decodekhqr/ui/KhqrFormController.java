@@ -1,5 +1,7 @@
 package com.sakcode.decodekhqr.ui;
 
+import com.sakcode.decodekhqr.history.HistoryEntry;
+import com.sakcode.decodekhqr.history.HistoryService;
 import com.sakcode.decodekhqr.khqr.KhqrFormMapper;
 import com.sakcode.decodekhqr.khqr.KhqrService;
 import com.sakcode.decodekhqr.model.Currency;
@@ -7,11 +9,17 @@ import com.sakcode.decodekhqr.model.MerchantType;
 import com.sakcode.decodekhqr.qr.PngImageWriter;
 import com.sakcode.decodekhqr.qr.QrImageCodec;
 import com.sakcode.decodekhqr.util.Timestamps;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.geometry.Bounds;
 import javafx.scene.Node;
 import javafx.scene.SnapshotParameters;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.control.Control;
+import javafx.scene.control.ListCell;
+import javafx.scene.control.TextField;
+import javafx.scene.control.TextFormatter;
 import javafx.scene.image.Image;
 import javafx.scene.image.WritableImage;
 import javafx.scene.input.Clipboard;
@@ -21,10 +29,20 @@ import javafx.scene.input.TransferMode;
 import javafx.scene.paint.Color;
 import javafx.scene.transform.Scale;
 import javafx.stage.FileChooser;
+import javafx.util.Duration;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.File;
+import java.math.BigDecimal;
+import java.text.DecimalFormat;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.function.UnaryOperator;
 
 /** Wires the form's buttons to {@link KhqrService}/{@link QrImageCodec} and reflects results back onto the UI. */
 public final class KhqrFormController {
@@ -41,22 +59,35 @@ public final class KhqrFormController {
     private final KhqrCardView card;
     private final KhqrService khqrService = new KhqrService();
     private final QrImageCodec qrImageCodec = new QrImageCodec();
+    private final HistoryService historyService;
+    private final DateTimeFormatter historyTimeFormat = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
-    public KhqrFormController(KhqrFormView.Layout layout) {
+    private Timeline countdownTimeline;
+    private Long expirationMillis;
+
+    public KhqrFormController(KhqrFormView.Layout layout, HistoryService historyService) {
         this.layout = layout;
         this.fields = layout.fields();
         this.card = layout.card();
+        this.historyService = historyService;
     }
 
     public void wireActions() {
         layout.generateButton().setOnAction(e -> onGenerate());
         layout.clearButton().setOnAction(e -> onClear());
         layout.selectFileButton().setOnAction(e -> onSelectFile());
+        layout.scanCameraButton().setOnAction(e -> onScanCamera());
         layout.decodeButton().setOnAction(e -> onDecode());
         layout.copyQrButton().setOnAction(e -> copyToClipboard(fields.qrCodeInput().getText()));
         layout.copyJsonButton().setOnAction(e -> copyToClipboard(fields.jsonResultArea().getText()));
+        layout.copyImageButton().setOnAction(e -> onCopyImage());
         layout.saveImageButton().setOnAction(e -> onSaveImage());
+        layout.printSheetButton().setOnAction(e -> onPrintSheet());
         wireDropZone(layout.dropZone());
+        wireLiveValidation();
+        wireAmountFormatter();
+        wireHistoryList();
+        refreshHistoryList();
     }
 
     private void onGenerate() {
@@ -84,6 +115,9 @@ public final class KhqrFormController {
             fields.qrImageView().setImage(qrImageCodec.encode(outcome.qrCode(), 400, 400));
             refreshCard();
             setStatus("Generated KHQR Image", false);
+
+            saveHistoryEntry("GENERATED", outcome.qrCode(), outcome.json(), currency);
+            startCountdownIfDynamic();
         } catch (RuntimeException ex) {
             showError("Invalid: " + ex.getMessage());
         } catch (Exception ex) {
@@ -116,6 +150,7 @@ public final class KhqrFormController {
         fields.qrStringLabel().getStyleClass().removeAll("status-error", "status-success");
         FormValidator.clearErrors(fields);
         refreshCard();
+        stopCountdown();
     }
 
     /** Reflects the current name/amount/currency fields onto the branded KHQR card preview. */
@@ -139,8 +174,13 @@ public final class KhqrFormController {
             return;
         }
         try {
-            applyDecodeOutcome(khqrService.decodeAndVerify(qrCodeText));
+            KhqrService.DecodeOutcome outcome = khqrService.decodeAndVerify(qrCodeText);
+            applyDecodeOutcome(outcome);
             fields.qrImageView().setImage(qrImageCodec.encode(qrCodeText, 400, 400));
+
+            Currency currency = Currency.fromCode(outcome.data() != null ? outcome.data().getTransactionCurrency() : "840");
+            saveHistoryEntry("DECODED", qrCodeText, outcome.json(), currency);
+            startCountdownFromDecoded(outcome);
         } catch (Exception ex) {
             showError(ex.getMessage());
         }
@@ -276,5 +316,296 @@ public final class KhqrFormController {
         fields.qrStringLabel().setText(message);
         fields.qrStringLabel().getStyleClass().removeAll("status-error", "status-success");
         fields.qrStringLabel().getStyleClass().add(error ? "status-error" : "status-success");
+    }
+
+    // ── Webcam Scanner ───────────────────────────────────────────────────────────
+
+    private void onScanCamera() {
+        Optional<String> result = new WebcamScanDialog().showAndWait(layout.root().getScene().getWindow());
+        result.ifPresent(qrText -> {
+            fields.qrCodeInput().setText(qrText);
+            onDecode();
+        });
+    }
+
+    // ── Copy Image to Clipboard ──────────────────────────────────────────────────
+
+    private void onCopyImage() {
+        try {
+            WritableImage image = renderExportImage();
+            ClipboardContent content = new ClipboardContent();
+            content.putImage(image);
+            Clipboard.getSystemClipboard().setContent(content);
+            setStatus("Image copied to clipboard", false);
+        } catch (Exception ex) {
+            showError("Failed to copy image: " + ex.getMessage());
+        }
+    }
+
+    // ── Print Sheet ──────────────────────────────────────────────────────────────
+
+    private void onPrintSheet() {
+        try {
+            WritableImage cardImage = renderExportImage();
+            new PrintSheetDialog(cardImage).show(layout.root().getScene().getWindow());
+        } catch (Exception ex) {
+            showError("Failed to prepare print sheet: " + ex.getMessage());
+        }
+    }
+
+    // ── Live Validation ──────────────────────────────────────────────────────────
+
+    private void wireLiveValidation() {
+        List<TextField> requiredFields = List.of(
+                fields.bakongAccountIdInput(), fields.acquiringBankInput(),
+                fields.merchantCategoryCodeInput(), fields.merchantNameInput(),
+                fields.merchantCityInput()
+        );
+        for (TextField field : requiredFields) {
+            field.textProperty().addListener((obs, old, val) -> {
+                if (StringUtils.isBlank(val)) {
+                    if (!field.getStyleClass().contains(FormValidator.ERROR_CLASS)) {
+                        field.getStyleClass().add(FormValidator.ERROR_CLASS);
+                    }
+                } else {
+                    field.getStyleClass().remove(FormValidator.ERROR_CLASS);
+                }
+            });
+        }
+    }
+
+    // ── Amount Formatter ─────────────────────────────────────────────────────────
+
+    private void wireAmountFormatter() {
+        UnaryOperator<TextFormatter.Change> filter = change -> {
+            String newText = change.getControlNewText();
+            if (newText.matches("[0-9.,]*")) {
+                return change;
+            }
+            return null;
+        };
+        fields.transactionAmountInput().setTextFormatter(new TextFormatter<>(filter));
+
+        fields.transactionAmountInput().focusedProperty().addListener((obs, old, focused) -> {
+            if (!focused) {
+                formatAmountOnFocusLost();
+            } else {
+                String raw = fields.transactionAmountInput().getText().replace(",", "");
+                fields.transactionAmountInput().setText(raw);
+            }
+        });
+    }
+
+    private void formatAmountOnFocusLost() {
+        String text = fields.transactionAmountInput().getText().replace(",", "").trim();
+        if (StringUtils.isBlank(text)) {
+            return;
+        }
+        try {
+            BigDecimal amount = new BigDecimal(text);
+            Currency currency = Currency.fromDisplay(fields.transactionCurrencyInput().getValue());
+            int decimals = amount.scale() <= 0 ? 0 : Math.max(amount.scale(), currency.minorUnits());
+            DecimalFormat format = new DecimalFormat("#,##0");
+            format.setMinimumFractionDigits(decimals);
+            format.setMaximumFractionDigits(decimals);
+            fields.transactionAmountInput().setText(format.format(amount));
+        } catch (NumberFormatException ignored) {
+        }
+    }
+
+    // ── History ──────────────────────────────────────────────────────────────────
+
+    private void wireHistoryList() {
+        fields.historyListView().setCellFactory(lv -> new ListCell<>() {
+            @Override
+            protected void updateItem(HistoryEntry item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                    setGraphic(null);
+                } else {
+                    String time = Instant.ofEpochMilli(item.timestamp()).atZone(ZoneId.systemDefault()).format(historyTimeFormat);
+                    String prefix = "[" + item.type() + "]";
+                    String name = StringUtils.defaultString(item.merchantName(), "Unknown");
+                    String amount = StringUtils.defaultString(item.amount(), "0");
+                    String currency = StringUtils.defaultString(item.currency(), "USD");
+                    setText(String.format("%s %s — %s %s — %s", prefix, name, amount, currency, time));
+                }
+            }
+        });
+
+        fields.historyListView().setOnMouseClicked(e -> {
+            if (e.getClickCount() == 2) {
+                restoreHistoryEntry(fields.historyListView().getSelectionModel().getSelectedItem());
+            }
+        });
+
+        javafx.scene.control.ContextMenu menu = new javafx.scene.control.ContextMenu();
+        javafx.scene.control.MenuItem deleteItem = new javafx.scene.control.MenuItem("Delete");
+        deleteItem.setOnAction(e -> {
+            HistoryEntry selected = fields.historyListView().getSelectionModel().getSelectedItem();
+            if (selected != null) {
+                historyService.delete(selected.id());
+                refreshHistoryList();
+            }
+        });
+        menu.getItems().add(deleteItem);
+        fields.historyListView().setContextMenu(menu);
+    }
+
+    private void refreshHistoryList() {
+        fields.historyListView().getItems().setAll(historyService.list());
+    }
+
+    private void saveHistoryEntry(String type, String qrString, String json, Currency currency) {
+        Map<String, String> snapshot = new LinkedHashMap<>();
+        snapshot.put("merchantType", fields.merchantTypeInput().getValue());
+        snapshot.put("bakongAccountId", fields.bakongAccountIdInput().getText());
+        snapshot.put("merchantId", fields.merchantIdInput().getText());
+        snapshot.put("accountInformation", fields.accountInformationInput().getText());
+        snapshot.put("acquiringBank", fields.acquiringBankInput().getText());
+        snapshot.put("merchantCategoryCode", fields.merchantCategoryCodeInput().getText());
+        snapshot.put("countryCode", fields.countryCodeInput().getText());
+        snapshot.put("merchantName", fields.merchantNameInput().getText());
+        snapshot.put("merchantCity", fields.merchantCityInput().getText());
+        snapshot.put("transactionCurrency", fields.transactionCurrencyInput().getValue());
+        snapshot.put("transactionAmount", fields.transactionAmountInput().getText());
+        snapshot.put("billNumber", fields.billNumberInput().getText());
+        snapshot.put("storeLabel", fields.storeLabelInput().getText());
+        snapshot.put("terminalLabel", fields.terminalLabelInput().getText());
+        snapshot.put("mobileNumber", fields.mobileNumberInput().getText());
+        snapshot.put("timeStamp", fields.timeStampLabel().getText());
+        snapshot.put("expireStamp", fields.expireStampLabel().getText());
+
+        HistoryEntry entry = new HistoryEntry(
+                null,
+                System.currentTimeMillis(),
+                type,
+                qrString,
+                json,
+                fields.merchantNameInput().getText(),
+                fields.transactionAmountInput().getText(),
+                currency.display(),
+                snapshot
+        );
+        historyService.save(entry);
+        refreshHistoryList();
+    }
+
+    private void restoreHistoryEntry(HistoryEntry entry) {
+        if (entry == null || entry.formSnapshot() == null) {
+            return;
+        }
+        Map<String, String> s = entry.formSnapshot();
+        fields.merchantTypeInput().setValue(s.getOrDefault("merchantType", MerchantType.REMITTANCE.display()));
+        fields.bakongAccountIdInput().setText(s.getOrDefault("bakongAccountId", ""));
+        fields.merchantIdInput().setText(s.getOrDefault("merchantId", ""));
+        fields.accountInformationInput().setText(s.getOrDefault("accountInformation", ""));
+        fields.acquiringBankInput().setText(s.getOrDefault("acquiringBank", ""));
+        fields.merchantCategoryCodeInput().setText(s.getOrDefault("merchantCategoryCode", ""));
+        fields.countryCodeInput().setText(s.getOrDefault("countryCode", ""));
+        fields.merchantNameInput().setText(s.getOrDefault("merchantName", ""));
+        fields.merchantCityInput().setText(s.getOrDefault("merchantCity", ""));
+        fields.transactionCurrencyInput().setValue(s.getOrDefault("transactionCurrency", Currency.USD.display()));
+        fields.transactionAmountInput().setText(s.getOrDefault("transactionAmount", ""));
+        fields.billNumberInput().setText(s.getOrDefault("billNumber", ""));
+        fields.storeLabelInput().setText(s.getOrDefault("storeLabel", ""));
+        fields.terminalLabelInput().setText(s.getOrDefault("terminalLabel", ""));
+        fields.mobileNumberInput().setText(s.getOrDefault("mobileNumber", ""));
+        fields.timeStampLabel().setText(s.getOrDefault("timeStamp", ""));
+        fields.expireStampLabel().setText(s.getOrDefault("expireStamp", ""));
+        fields.qrCodeInput().setText(entry.qrString());
+        fields.jsonResultArea().setText(entry.json());
+        try {
+            fields.qrImageView().setImage(qrImageCodec.encode(entry.qrString(), 400, 400));
+        } catch (Exception ignored) {
+        }
+        refreshCard();
+        FormValidator.clearErrors(fields);
+        setStatus("Restored from history", false);
+    }
+
+    // ── Expiry Countdown ─────────────────────────────────────────────────────────
+
+    private void startCountdownIfDynamic() {
+        String amountText = fields.transactionAmountInput().getText();
+        if (StringUtils.isBlank(amountText)) {
+            stopCountdown();
+            return;
+        }
+        try {
+            new BigDecimal(amountText.replace(",", ""));
+            expirationMillis = Timestamps.tenMinutesFromNowMillis();
+            startCountdownTimeline();
+        } catch (NumberFormatException e) {
+            stopCountdown();
+        }
+    }
+
+    private void startCountdownFromDecoded(KhqrService.DecodeOutcome outcome) {
+        if (outcome.data() == null) {
+            stopCountdown();
+            return;
+        }
+        String expText = outcome.data().getExpirationTimestamp();
+        if (StringUtils.isBlank(expText)) {
+            stopCountdown();
+            return;
+        }
+        try {
+            expirationMillis = Long.parseLong(expText);
+            if (expirationMillis > System.currentTimeMillis()) {
+                startCountdownTimeline();
+            } else {
+                stopCountdown();
+            }
+        } catch (NumberFormatException e) {
+            stopCountdown();
+        }
+    }
+
+    private void startCountdownTimeline() {
+        stopCountdown();
+        fields.expiryCountdownLabel().setVisible(true);
+        fields.expiryCountdownLabel().setManaged(true);
+        fields.expiryCountdownLabel().getStyleClass().removeAll("status-error");
+
+        countdownTimeline = new Timeline(new KeyFrame(Duration.seconds(1), e -> updateCountdown()));
+        countdownTimeline.setCycleCount(Timeline.INDEFINITE);
+        countdownTimeline.play();
+        updateCountdown();
+    }
+
+    private void updateCountdown() {
+        if (expirationMillis == null) {
+            stopCountdown();
+            return;
+        }
+        long remaining = expirationMillis - System.currentTimeMillis();
+        if (remaining <= 0) {
+            fields.expiryCountdownLabel().setText("Expired — regenerate");
+            fields.expiryCountdownLabel().getStyleClass().add("status-error");
+            stopCountdown();
+            return;
+        }
+        long minutes = remaining / 60_000;
+        long seconds = (remaining % 60_000) / 1000;
+        fields.expiryCountdownLabel().setText(String.format("Expires in %02d:%02d", minutes, seconds));
+        if (remaining <= 120_000) {
+            fields.expiryCountdownLabel().getStyleClass().add("status-error");
+        } else {
+            fields.expiryCountdownLabel().getStyleClass().removeAll("status-error");
+        }
+    }
+
+    private void stopCountdown() {
+        if (countdownTimeline != null) {
+            countdownTimeline.stop();
+            countdownTimeline = null;
+        }
+        expirationMillis = null;
+        fields.expiryCountdownLabel().setVisible(false);
+        fields.expiryCountdownLabel().setManaged(false);
+        fields.expiryCountdownLabel().getStyleClass().removeAll("status-error");
     }
 }

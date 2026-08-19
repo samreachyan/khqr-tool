@@ -1,5 +1,6 @@
 package com.sakcode.decodekhqr;
 
+import com.sakcode.decodekhqr.history.HistoryService;
 import com.sakcode.decodekhqr.ui.KhqrFormController;
 import com.sakcode.decodekhqr.ui.KhqrFormView;
 import com.sakcode.decodekhqr.ui.Theme;
@@ -34,7 +35,8 @@ public class MainKHQRApplication extends Application {
         }
 
         KhqrFormView.Layout layout = new KhqrFormView().build();
-        new KhqrFormController(layout).wireActions();
+        HistoryService historyService = new HistoryService();
+        new KhqrFormController(layout, historyService).wireActions();
 
         Scene scene = new Scene(layout.root(), 1200, 820);
         scene.getStylesheets().addAll(stylesheet(Theme.BASE_STYLESHEET), stylesheet(currentTheme.stylesheet()));

@@ -38,6 +38,7 @@ dependencies {
     implementation 'com.google.zxing:core:3.5.3'
     implementation 'org.controlsfx:controlsfx:11.1.2'
     implementation 'org.kordamp.bootstrapfx:bootstrapfx-core:0.4.0'
+    implementation 'org.openpnp:opencv:4.9.0-0'
 
     testImplementation platform('org.junit:junit-bom:5.10.0')
     testImplementation 'org.junit.jupiter:junit-jupiter-api'
@@ -84,6 +85,7 @@ shadowJar {
         include(dependency('com.fasterxml.jackson.core:jackson-annotations:2.18.3'))
         include(dependency('org.controlsfx:controlsfx:11.1.2'))
         include(dependency('org.kordamp.bootstrapfx:bootstrapfx-core:0.4.0'))
+        include(dependency('org.openpnp:opencv:4.9.0-0'))
     }
 }
 
