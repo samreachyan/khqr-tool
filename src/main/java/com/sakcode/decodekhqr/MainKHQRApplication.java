@@ -1,5 +1,6 @@
 package com.sakcode.decodekhqr;
 
+import com.sakcode.decodekhqr.history.HistoryService;
 import com.sakcode.decodekhqr.ui.KhqrFormController;
 import com.sakcode.decodekhqr.ui.KhqrFormView;
 import com.sakcode.decodekhqr.ui.Theme;
@@ -7,6 +8,9 @@ import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.scene.image.Image;
 import javafx.stage.Stage;
+
+import javax.imageio.ImageIO;
+import java.awt.Taskbar;
 
 public class MainKHQRApplication extends Application {
 
@@ -17,8 +21,22 @@ public class MainKHQRApplication extends Application {
         primaryStage.setTitle("KHQR Tool - @samreachyan");
         primaryStage.getIcons().add(new Image(getClass().getResourceAsStream("/icon_64.png")));
 
+        // Set macOS Dock icon when running outside a bundled .app (e.g. gradle run, java -jar)
+        if (Taskbar.isTaskbarSupported()) {
+            try {
+                Taskbar taskbar = Taskbar.getTaskbar();
+                java.awt.Image dockIcon = ImageIO.read(getClass().getResourceAsStream("/icon_64.png"));
+                if (dockIcon != null) {
+                    taskbar.setIconImage(dockIcon);
+                }
+            } catch (Exception e) {
+                // Ignore: platform may not allow dock icon changes
+            }
+        }
+
         KhqrFormView.Layout layout = new KhqrFormView().build();
-        new KhqrFormController(layout).wireActions();
+        HistoryService historyService = new HistoryService();
+        new KhqrFormController(layout, historyService).wireActions();
 
         Scene scene = new Scene(layout.root(), 1200, 820);
         scene.getStylesheets().addAll(stylesheet(Theme.BASE_STYLESHEET), stylesheet(currentTheme.stylesheet()));

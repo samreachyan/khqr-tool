@@ -11,7 +11,7 @@ import java.util.List;
 /** Validates required KHQR generation fields and flags invalid controls with the {@code field-error} style. */
 public final class FormValidator {
 
-    private static final String ERROR_CLASS = "field-error";
+    static final String ERROR_CLASS = "field-error";
 
     private FormValidator() {
     }

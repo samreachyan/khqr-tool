@@ -20,6 +20,10 @@ java {
 application {
     // Remove mainModule - we're not using module system
     mainClass = 'com.sakcode.decodekhqr.MainKHQRApplication'
+    applicationDefaultJvmArgs = [
+        '-Xdock:name=KHQR Tool',
+        '-Dapple.awt.application.name=KHQR Tool'
+    ]
 }
 
 javafx {
@@ -34,6 +38,7 @@ dependencies {
     implementation 'com.google.zxing:core:3.5.3'
     implementation 'org.controlsfx:controlsfx:11.1.2'
     implementation 'org.kordamp.bootstrapfx:bootstrapfx-core:0.4.0'
+    implementation 'org.openpnp:opencv:4.9.0-0'
 
     testImplementation platform('org.junit:junit-bom:5.10.0')
     testImplementation 'org.junit.jupiter:junit-jupiter-api'
@@ -46,10 +51,14 @@ test {
 
 // Configure the run task for development
 run {
+    def iconPath = file('src/main/resources/icon_64.png').absolutePath
     // Add JavaFX modules to module path
     jvmArgs = [
             '--module-path', "${System.getProperty('java.home')}/lib",
-            '--add-modules', 'javafx.controls,javafx.fxml'
+            '--add-modules', 'javafx.controls,javafx.fxml',
+            '-Xdock:icon=' + iconPath,
+            '-Xdock:name=KHQR Tool',
+            '-Dapple.awt.application.name=KHQR Tool'
     ]
     // Set the classpath to include all dependencies
     classpath = sourceSets.main.runtimeClasspath
@@ -76,6 +85,7 @@ shadowJar {
         include(dependency('com.fasterxml.jackson.core:jackson-annotations:2.18.3'))
         include(dependency('org.controlsfx:controlsfx:11.1.2'))
         include(dependency('org.kordamp.bootstrapfx:bootstrapfx-core:0.4.0'))
+        include(dependency('org.openpnp:opencv:4.9.0-0'))
     }
 }
 

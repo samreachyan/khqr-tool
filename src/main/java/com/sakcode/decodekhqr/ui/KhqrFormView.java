@@ -1,5 +1,6 @@
 package com.sakcode.decodekhqr.ui;
 
+import com.sakcode.decodekhqr.history.HistoryEntry;
 import com.sakcode.decodekhqr.model.Currency;
 import com.sakcode.decodekhqr.model.MerchantType;
 import javafx.geometry.Pos;
@@ -9,6 +10,7 @@ import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Control;
 import javafx.scene.control.Label;
+import javafx.scene.control.ListView;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.SplitPane;
 import javafx.scene.control.Tab;
@@ -32,7 +34,9 @@ public final class KhqrFormView {
 
     public record Layout(Parent root, KhqrFormFields fields, Button selectFileButton, Button decodeButton,
                           Button generateButton, Button clearButton, Button copyQrButton, Button copyJsonButton,
-                          Button saveImageButton, Button themeToggleButton, Node dropZone, KhqrCardView card) {
+                          Button saveImageButton, Button themeToggleButton, Node dropZone, KhqrCardView card,
+                          Button scanCameraButton, Button copyImageButton, Button printSheetButton,
+                          Label expiryCountdownLabel, ListView<HistoryEntry> historyListView) {
     }
 
     public Layout build() {
@@ -46,11 +50,15 @@ public final class KhqrFormView {
         ResultPanel resultPanel = buildResultPanel();
         GenerateTab generateTab = buildGenerateTab();
         DecodeTab decodeTab = buildDecodeTab();
+        HistoryTab historyTab = buildHistoryTab();
 
         TabPane tabPane = new TabPane();
         tabPane.getStyleClass().add("app-tabs");
         tabPane.setTabClosingPolicy(TabPane.TabClosingPolicy.UNAVAILABLE);
-        tabPane.getTabs().addAll(new Tab("Generate", generateTab.content()), new Tab("Decode", decodeTab.content()));
+        tabPane.getTabs().addAll(
+                new Tab("Generate", generateTab.content()),
+                new Tab("Decode", decodeTab.content()),
+                new Tab("History", historyTab.content()));
 
         SplitPane splitPane = new SplitPane(tabPane, resultPanel.content());
         splitPane.setDividerPositions(0.55);
@@ -65,12 +73,15 @@ public final class KhqrFormView {
                 generateTab.billNumberInput(), generateTab.storeLabelInput(), generateTab.terminalLabelInput(),
                 generateTab.mobileNumberInput(), generateTab.timeStampLabel(), generateTab.expireStampLabel(),
                 decodeTab.qrCodeInput(), resultPanel.qrStringLabel(), resultPanel.card().qrImageView(),
-                resultPanel.jsonResultArea());
+                resultPanel.jsonResultArea(),
+                decodeTab.scanCameraButton(), resultPanel.copyImageButton(), resultPanel.printSheetButton(),
+                resultPanel.expiryCountdownLabel(), historyTab.historyListView());
 
         return new Layout(root, fields, decodeTab.selectFileButton(), decodeTab.decodeButton(),
                 generateTab.generateButton(), generateTab.clearButton(), resultPanel.copyQrButton(),
                 resultPanel.copyJsonButton(), resultPanel.saveImageButton(), themeToggleButton, decodeTab.dropZone(),
-                resultPanel.card());
+                resultPanel.card(), decodeTab.scanCameraButton(), resultPanel.copyImageButton(),
+                resultPanel.printSheetButton(), resultPanel.expiryCountdownLabel(), historyTab.historyListView());
     }
 
     private HBox buildToolbar(Button themeToggleButton) {
@@ -190,7 +201,7 @@ public final class KhqrFormView {
     }
 
     private record DecodeTab(Node content, Node dropZone, TextArea qrCodeInput, Button selectFileButton,
-                              Button decodeButton) {
+                              Button scanCameraButton, Button decodeButton) {
     }
 
     private DecodeTab buildDecodeTab() {
@@ -207,7 +218,9 @@ public final class KhqrFormView {
 
         Button selectFileButton = new Button("Select File...");
         selectFileButton.getStyleClass().add("secondary-button");
-        HBox selectRow = new HBox(selectFileButton);
+        Button scanCameraButton = new Button("Scan Camera");
+        scanCameraButton.getStyleClass().add("secondary-button");
+        HBox selectRow = new HBox(10, selectFileButton, scanCameraButton);
         selectRow.setAlignment(Pos.CENTER);
 
         Label qrTextLabel = new Label("Or paste / edit the raw KHQR text:");
@@ -227,11 +240,12 @@ public final class KhqrFormView {
         content.getStyleClass().add("tab-content");
         VBox.setVgrow(content, Priority.ALWAYS);
 
-        return new DecodeTab(content, dropZone, qrCodeInput, selectFileButton, decodeButton);
+        return new DecodeTab(content, dropZone, qrCodeInput, selectFileButton, scanCameraButton, decodeButton);
     }
 
     private record ResultPanel(Node content, KhqrCardView card, Label qrStringLabel, TextArea jsonResultArea,
-                                Button copyQrButton, Button copyJsonButton, Button saveImageButton) {
+                                Button copyQrButton, Button copyJsonButton, Button saveImageButton,
+                                Button copyImageButton, Button printSheetButton, Label expiryCountdownLabel) {
     }
 
     private ResultPanel buildResultPanel() {
@@ -250,8 +264,19 @@ public final class KhqrFormView {
         copyJsonButton.getStyleClass().add("icon-button");
         Button saveImageButton = new Button("Save Image");
         saveImageButton.getStyleClass().add("icon-button");
-        HBox actionRow = new HBox(8, copyQrButton, copyJsonButton, saveImageButton);
+        Button copyImageButton = new Button("Copy Image");
+        copyImageButton.getStyleClass().add("icon-button");
+        Button printSheetButton = new Button("Print Sheet...");
+        printSheetButton.getStyleClass().add("icon-button");
+        HBox actionRow = new HBox(8, copyQrButton, copyJsonButton, copyImageButton, saveImageButton, printSheetButton);
         actionRow.setAlignment(Pos.CENTER);
+
+        Label expiryCountdownLabel = new Label();
+        expiryCountdownLabel.setWrapText(true);
+        expiryCountdownLabel.setMaxWidth(Double.MAX_VALUE);
+        expiryCountdownLabel.getStyleClass().add("countdown-label");
+        expiryCountdownLabel.setVisible(false);
+        expiryCountdownLabel.setManaged(false);
 
         Label qrStringLabel = new Label();
         qrStringLabel.setWrapText(true);
@@ -266,12 +291,30 @@ public final class KhqrFormView {
         jsonResultArea.setPrefRowCount(10);
         VBox.setVgrow(jsonResultArea, Priority.ALWAYS);
 
-        VBox content = new VBox(12, header, imageBox, actionRow, qrStringLabel, jsonHeader, jsonResultArea);
+        VBox content = new VBox(12, header, imageBox, actionRow, expiryCountdownLabel, qrStringLabel, jsonHeader, jsonResultArea);
         content.getStyleClass().addAll("tab-content", "result-panel");
         VBox.setVgrow(content, Priority.ALWAYS);
 
         return new ResultPanel(content, card, qrStringLabel, jsonResultArea, copyQrButton, copyJsonButton,
-                saveImageButton);
+                saveImageButton, copyImageButton, printSheetButton, expiryCountdownLabel);
+    }
+
+    private record HistoryTab(Node content, ListView<HistoryEntry> historyListView) {
+    }
+
+    private HistoryTab buildHistoryTab() {
+        Label header = new Label("Recent QRs");
+        header.getStyleClass().add("panel-header");
+
+        ListView<HistoryEntry> historyListView = new ListView<>();
+        historyListView.getStyleClass().add("history-list");
+        VBox.setVgrow(historyListView, Priority.ALWAYS);
+
+        VBox content = new VBox(12, header, historyListView);
+        content.getStyleClass().addAll("tab-content", "result-panel");
+        VBox.setVgrow(content, Priority.ALWAYS);
+
+        return new HistoryTab(content, historyListView);
     }
 
     private void addRow(GridPane grid, int row, String labelText, Control control) {
