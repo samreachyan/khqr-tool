@@ -20,6 +20,10 @@ java {
 application {
     // Remove mainModule - we're not using module system
     mainClass = 'com.sakcode.decodekhqr.MainKHQRApplication'
+    applicationDefaultJvmArgs = [
+        '-Xdock:name=KHQR Tool',
+        '-Dapple.awt.application.name=KHQR Tool'
+    ]
 }
 
 javafx {
@@ -46,10 +50,14 @@ test {
 
 // Configure the run task for development
 run {
+    def iconPath = file('src/main/resources/icon_64.png').absolutePath
     // Add JavaFX modules to module path
     jvmArgs = [
             '--module-path', "${System.getProperty('java.home')}/lib",
-            '--add-modules', 'javafx.controls,javafx.fxml'
+            '--add-modules', 'javafx.controls,javafx.fxml',
+            '-Xdock:icon=' + iconPath,
+            '-Xdock:name=KHQR Tool',
+            '-Dapple.awt.application.name=KHQR Tool'
     ]
     // Set the classpath to include all dependencies
     classpath = sourceSets.main.runtimeClasspath

@@ -8,6 +8,9 @@ import javafx.scene.Scene;
 import javafx.scene.image.Image;
 import javafx.stage.Stage;
 
+import javax.imageio.ImageIO;
+import java.awt.Taskbar;
+
 public class MainKHQRApplication extends Application {
 
     private Theme currentTheme = Theme.LIGHT;
@@ -16,6 +19,19 @@ public class MainKHQRApplication extends Application {
     public void start(Stage primaryStage) {
         primaryStage.setTitle("KHQR Tool - @samreachyan");
         primaryStage.getIcons().add(new Image(getClass().getResourceAsStream("/icon_64.png")));
+
+        // Set macOS Dock icon when running outside a bundled .app (e.g. gradle run, java -jar)
+        if (Taskbar.isTaskbarSupported()) {
+            try {
+                Taskbar taskbar = Taskbar.getTaskbar();
+                java.awt.Image dockIcon = ImageIO.read(getClass().getResourceAsStream("/icon_64.png"));
+                if (dockIcon != null) {
+                    taskbar.setIconImage(dockIcon);
+                }
+            } catch (Exception e) {
+                // Ignore: platform may not allow dock icon changes
+            }
+        }
 
         KhqrFormView.Layout layout = new KhqrFormView().build();
         new KhqrFormController(layout).wireActions();
