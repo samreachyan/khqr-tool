@@ -1,7 +1,8 @@
 name: Release
 
 # Merging into main cuts a release: bump the version, tag it, build native installers
-# for macOS (dmg) and Linux (deb + rpm), and publish them to a GitHub Release.
+# for macOS (dmg) and Linux (deb + rpm), malware-scan and checksum each one, and
+# publish everything to a GitHub Release.
 on:
   push:
     branches: [main]
@@ -79,17 +80,77 @@ jobs:
         if: matrix.installer == 'rpm'
         run: sudo apt-get update && sudo apt-get install -y rpm
 
-      - name: Build ${{ matrix.installer }} installer
-        run: >-
-          ./gradlew jpackageInstaller
-          -Pversion=${{ needs.tag.outputs.new_version }}
-          -PinstallerType=${{ matrix.installer }}
+      - name: Install ClamAV (macOS)
+        if: matrix.os == 'macos-14'
+        run: |
+          brew install clamav
+          prefix="$(brew --prefix)"
+          cp "$prefix/etc/clamav/freshclam.conf.sample" "$prefix/etc/clamav/freshclam.conf"
+          sed -i '' '/^Example/d' "$prefix/etc/clamav/freshclam.conf"
+          freshclam
+
+      - name: Install ClamAV (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clamav
+          sudo systemctl stop clamav-freshclam || true
+          sudo freshclam
+
+      - name: Build ${{ matrix.installer }} installer (with Gradle Build Scan)
+        id: gradle_build
+        run: |
+          set -o pipefail
+          ./gradlew jpackageInstaller \
+            -Pversion=${{ needs.tag.outputs.new_version }} \
+            -PinstallerType=${{ matrix.installer }} \
+            --scan | tee gradle-build.log
+          scan_url=$(grep -Eo 'https://gradle\.com/s/[a-zA-Z0-9]+' gradle-build.log | tail -1)
+          echo "scan_url=${scan_url}" >> "$GITHUB_OUTPUT"
+
+      - name: Malware scan installer
+        id: clamav
+        run: |
+          set -e
+          artifact=$(ls build/dist/*.${{ matrix.installer }})
+          if command -v clamscan >/dev/null; then
+            SCAN_BIN=clamscan
+          else
+            SCAN_BIN="$(brew --prefix)/bin/clamscan"
+          fi
+          "$SCAN_BIN" --infected --no-summary "$artifact"
+          echo "result=clean" >> "$GITHUB_OUTPUT"
+
+      - name: Checksum installer
+        id: checksum
+        run: |
+          cd build/dist
+          artifact=$(basename ./*.${{ matrix.installer }})
+          if command -v sha256sum >/dev/null; then
+            sha256sum "$artifact" > "$artifact.sha256"
+          else
+            shasum -a 256 "$artifact" > "$artifact.sha256"
+          fi
+          echo "file=${artifact}" >> "$GITHUB_OUTPUT"
+          echo "sha256=$(cut -d' ' -f1 "$artifact.sha256")" >> "$GITHUB_OUTPUT"
+
+      - name: Record release metadata
+        run: |
+          cat > "build/dist/RELEASE-META-${{ matrix.installer }}.txt" <<EOF
+          FILE=${{ steps.checksum.outputs.file }}
+          SHA256=${{ steps.checksum.outputs.sha256 }}
+          CLAMAV=${{ steps.clamav.outputs.result }}
+          SCAN_URL=${{ steps.gradle_build.outputs.scan_url }}
+          EOF
 
       - name: Upload installer
         uses: actions/upload-artifact@v4
         with:
           name: khqr-tool-${{ needs.tag.outputs.new_version }}-${{ matrix.installer }}
-          path: build/dist/*.${{ matrix.installer }}
+          path: |
+            build/dist/*.${{ matrix.installer }}
+            build/dist/*.${{ matrix.installer }}.sha256
+            build/dist/RELEASE-META-${{ matrix.installer }}.txt
           if-no-files-found: error
 
   release:
@@ -104,16 +165,33 @@ jobs:
 
       - name: Build release notes
         id: notes
+        env:
+          CHANGELOG: ${{ needs.tag.outputs.changelog }}
+          REPO: ${{ github.repository }}
         run: |
           delimiter="EOF_$(date +%s)_$RANDOM"
           {
             echo "body<<${delimiter}"
             echo '> **macOS users:** this build isn'"'"'t code-signed, so Gatekeeper will say it "cannot be verified" or "is free of malware" on first launch.'
-            echo '> Right-click the app → **Open** → **Open** (instead of double-clicking), or run `xattr -cr /Applications/KHQR-Tool.app`. One-time step; see the [README](https://github.com/${{ github.repository }}#macos-apple-could-not-verify-is-free-of-malware) for details.'
+            echo "> Right-click the app → **Open** → **Open** (instead of double-clicking), or run \`xattr -cr /Applications/KHQR-Tool.app\`. One-time step; see the [README](https://github.com/${REPO}#macos-apple-could-not-verify-is-free-of-malware) for details."
             echo ''
-            echo "${{ needs.tag.outputs.changelog }}"
+            echo '### Build verification'
+            echo ''
+            echo '| Installer | ClamAV | SHA256 | Gradle Build Scan |'
+            echo '|---|---|---|---|'
+            for meta in ./dist/RELEASE-META-*.txt; do
+              [ -f "$meta" ] || continue
+              # shellcheck disable=SC1090
+              . "$meta"
+              echo "| \`${FILE}\` | ${CLAMAV} | \`${SHA256}\` | [scan](${SCAN_URL}) |"
+            done
+            echo ''
+            echo "$CHANGELOG"
             echo "${delimiter}"
           } >> "$GITHUB_OUTPUT"
+
+      - name: Remove internal metadata before publishing
+        run: rm -f dist/RELEASE-META-*.txt
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2

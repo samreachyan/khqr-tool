@@ -142,6 +142,10 @@ task packageMacApp(type: Exec) {
             '--main-class', 'com.sakcode.decodekhqr.MainKHQRApplication',
             '--module-path', javafxModules.join(File.pathSeparator),
             '--add-modules', 'javafx.controls,javafx.fxml',
+            // Overrides jpackage's default Info.plist template so the bundle declares
+            // NSCameraUsageDescription — without it, macOS denies webcam access silently
+            // instead of prompting (see packaging/macos/Info.plist).
+            '--resource-dir', file('packaging/macos').absolutePath,
             '--dest', destDir.absolutePath
     ]
 }
@@ -204,6 +208,12 @@ task jpackageInstaller(type: Exec) {
                 '--add-modules', 'javafx.controls,javafx.fxml',
                 '--dest', destDir.absolutePath
         ]
+        if (type == 'dmg') {
+            // Overrides jpackage's default Info.plist so the bundle declares
+            // NSCameraUsageDescription — without it, macOS denies webcam access silently
+            // instead of prompting (see packaging/macos/Info.plist).
+            commandLine += ['--resource-dir', file('packaging/macos').absolutePath]
+        }
         if (type == 'deb' || type == 'rpm') {
             commandLine += ['--linux-shortcut', '--linux-menu-group', 'Utility']
         }
