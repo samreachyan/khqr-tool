@@ -19,13 +19,13 @@ public class MainKHQRApplication extends Application {
     @Override
     public void start(Stage primaryStage) {
         primaryStage.setTitle("KHQR Tool - @samreachyan");
-        primaryStage.getIcons().add(new Image(getClass().getResourceAsStream("/icon_64.png")));
+        primaryStage.getIcons().add(new Image(getClass().getResourceAsStream("/app_icon.png")));
 
         // Set macOS Dock icon when running outside a bundled .app (e.g. gradle run, java -jar)
         if (Taskbar.isTaskbarSupported()) {
             try {
                 Taskbar taskbar = Taskbar.getTaskbar();
-                java.awt.Image dockIcon = ImageIO.read(getClass().getResourceAsStream("/icon_64.png"));
+                java.awt.Image dockIcon = ImageIO.read(getClass().getResourceAsStream("/app_icon.png"));
                 if (dockIcon != null) {
                     taskbar.setIconImage(dockIcon);
                 }
