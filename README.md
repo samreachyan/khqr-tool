@@ -19,6 +19,26 @@ A JavaFX desktop application for generating and decoding [Bakong KHQR](https://b
 |---|---|
 | ![Generate KHQR](image/generate.png) | ![Decode KHQR](image/decode.png) |
 
+## Installation
+
+Grab the installer for your OS from the [latest release](https://github.com/samreachyan/khqr-tool/releases/latest):
+
+- **macOS**: `KHQR-Tool-<version>.dmg`
+- **Linux (Debian/Ubuntu)**: `khqr-tool_<version>-1_amd64.deb`
+- **Linux (Fedora/RHEL)**: `khqr-tool-<version>-1.x86_64.rpm`
+
+### macOS: "Apple could not verify... is free of malware"
+
+The releases aren't code-signed with a paid Apple Developer ID, so Gatekeeper blocks the app on first launch. This is a one-time step per install, not a real security warning about this release — do either of:
+
+- **Right-click (or Control-click) the app in Finder → Open → Open**, instead of double-clicking. This shows a dialog with an "Open" button that a plain double-click doesn't.
+- Or clear the quarantine flag from Terminal:
+  ```bash
+  xattr -cr /Applications/KHQR-Tool.app
+  ```
+
+After the first successful open, macOS remembers your choice and future launches work normally.
+
 ## System Requirements
 
 - **Development**: JDK 21+

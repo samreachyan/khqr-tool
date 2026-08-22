@@ -102,10 +102,23 @@ jobs:
           path: dist
           merge-multiple: true
 
+      - name: Build release notes
+        id: notes
+        run: |
+          delimiter="EOF_$(date +%s)_$RANDOM"
+          {
+            echo "body<<${delimiter}"
+            echo '> **macOS users:** this build isn'"'"'t code-signed, so Gatekeeper will say it "cannot be verified" or "is free of malware" on first launch.'
+            echo '> Right-click the app → **Open** → **Open** (instead of double-clicking), or run `xattr -cr /Applications/KHQR-Tool.app`. One-time step; see the [README](https://github.com/${{ github.repository }}#macos-apple-could-not-verify-is-free-of-malware) for details.'
+            echo ''
+            echo "${{ needs.tag.outputs.changelog }}"
+            echo "${delimiter}"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ needs.tag.outputs.new_tag }}
           name: ${{ needs.tag.outputs.new_tag }}
-          body: ${{ needs.tag.outputs.changelog }}
+          body: ${{ steps.notes.outputs.body }}
           files: dist/*
