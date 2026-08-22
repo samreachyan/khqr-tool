@@ -1,3 +1,5 @@
+import org.gradle.internal.os.OperatingSystem
+
 plugins {
     id 'java'
     id 'application'
@@ -6,7 +8,8 @@ plugins {
 }
 
 group = 'com.sakcode'
-version = '1.0-SNAPSHOT'
+// `-Pversion=1.2.3` on the CLI (used by the release workflow) takes precedence over this default.
+version = project.findProperty('version') ?: '1.0-SNAPSHOT'
 
 repositories {
     mavenCentral()
@@ -148,4 +151,64 @@ task macApp(dependsOn: packageMacApp) {
     doLast {
         println "\n✅ Built: build/dist/KHQR-Tool.app"
     }
+}
+
+// ── Cross-platform native installer via jpackage (used by CI/CD) ─────────────
+// Unlike packageMacApp above (which needs the JavaFX jars committed under lib/),
+// this reuses the JavaFX module jars the javafx {} block already resolved onto
+// runtimeClasspath for the *current* host platform/arch, so the same task works
+// unmodified on macOS and Linux runners without committing per-platform jars.
+//
+// Usage: ./gradlew jpackageInstaller -Pversion=1.2.3 -PinstallerType=dmg|deb|rpm
+task jpackageInstaller(type: Exec) {
+    group = 'distribution'
+    description = 'Builds a native installer (dmg on macOS, deb/rpm on Linux) with jpackage.'
+    dependsOn shadowJar
+
+    def appName = 'KHQR-Tool'
+    def appVersion = project.version.toString()
+    def destDir = file("${buildDir}/dist")
+    def type = (project.findProperty('installerType')
+            ?: (OperatingSystem.current().isMacOsX() ? 'dmg' : 'deb')).toString()
+    def iconFile = type == 'dmg'
+            ? file('src/main/resources/app_icon.icns')
+            : file('src/main/resources/app_icon.png')
+
+    doFirst {
+        if (!(appVersion ==~ /\d+(\.\d+){1,2}/)) {
+            throw new GradleException("jpackage needs a numeric x.y[.z] --app-version, got '${appVersion}'. " +
+                    "Pass one explicitly, e.g. ./gradlew jpackageInstaller -Pversion=1.2.3")
+        }
+        destDir.mkdirs()
+
+        def jarFile = shadowJar.archiveFile.get().asFile
+        def javafxModulePath = configurations.runtimeClasspath.files
+                .findAll { it.name.startsWith('javafx-') }
+                .collect { it.absolutePath }
+        if (javafxModulePath.isEmpty()) {
+            throw new GradleException("No javafx-*.jar found on runtimeClasspath for this platform/arch")
+        }
+
+        commandLine = [
+                'jpackage',
+                '--type', type,
+                '--name', appName,
+                '--app-version', appVersion,
+                '--vendor', 'SAK Code',
+                '--description', 'Generate and decode Bakong KHQR codes',
+                '--icon', iconFile.absolutePath,
+                '--input', jarFile.parent,
+                '--main-jar', jarFile.name,
+                '--main-class', 'com.sakcode.decodekhqr.MainKHQRApplication',
+                '--module-path', javafxModulePath.join(File.pathSeparator),
+                '--add-modules', 'javafx.controls,javafx.fxml',
+                '--dest', destDir.absolutePath
+        ]
+        if (type == 'deb' || type == 'rpm') {
+            commandLine += ['--linux-shortcut', '--linux-menu-group', 'Utility']
+        }
+    }
+
+    // Placeholder so Gradle accepts the Exec task before doFirst rewrites it above.
+    commandLine = ['jpackage', '--version']
 }
