@@ -53,18 +53,13 @@ public final class KhqrCardView extends StackPane {
     private static final double SIDE_MARGIN = 0.10;
     private static final double QR_MARGIN = 0.08;
 
-    /** Ribbon tail leg length, as a fraction of the header height. */
-    private static final double TAIL_LEG = 0.45;
-
     /** Text baselines, measured down from the header bottom edge as a fraction of card height. */
     private static final double NAME_BASELINE = 0.081;
-    private static final double AMOUNT_BASELINE = 0.151;
-    private static final double CURRENCY_LIFT = 0.009;
+    private static final double AMOUNT_BASELINE = 0.171;
 
     /** Font sizes, as a fraction of the card height. */
-    private static final double NAME_FONT = 0.027;
     private static final double AMOUNT_FONT = 0.060;
-    private static final double CURRENCY_FONT = 0.029;
+    private static final double CURRENCY_FONT = 0.040;
 
     /** Currency badge disc diameter as a fraction of the QR, and its share of the artwork canvas. */
     private static final double BADGE_DIAMETER = 0.176;
@@ -100,9 +95,14 @@ public final class KhqrCardView extends StackPane {
 
     public void setAmount(String rawAmount, Currency currency) {
         amountText.setText(formatAmount(rawAmount, currency));
-        currencyText.setText(currency.display());
+        currencyText.setText(currencySymbol(currency));
         badgeView.setImage(badgeImage(currency));
         layoutCurrency();
+    }
+
+    /** The card renders the currency as its symbol rather than its ISO code. */
+    private static String currencySymbol(Currency currency) {
+        return currency == Currency.KHR ? "៛" : "$";
     }
 
     /**
@@ -162,13 +162,13 @@ public final class KhqrCardView extends StackPane {
     /** The red banner plus its 45&deg; ribbon tail folding down past the right edge. */
     private Node buildHeader() {
         double headerHeight = cardHeight * HEADER_HEIGHT;
-        double tail = headerHeight * TAIL_LEG;
+        double tail = sideMargin;
 
         Rectangle banner = new Rectangle(cardWidth, headerHeight, Color.web(HEADER_RED));
         Polygon ribbon = new Polygon(
                 cardWidth - tail, headerHeight,
-                cardWidth, headerHeight,
-                cardWidth, headerHeight + tail);
+                cardWidth, headerHeight - 2,
+                cardWidth, headerHeight + tail - 2);
         ribbon.setFill(Color.web(HEADER_RED));
 
         Node logo = SvgIcon.load("/khqr-assets/KHQR-logo-white.svg", headerHeight * 0.30);
@@ -183,26 +183,26 @@ public final class KhqrCardView extends StackPane {
     private Node buildText() {
         double headerBottom = cardHeight * HEADER_HEIGHT;
 
-        nameText.setFont(Font.font(null, FontWeight.NORMAL, cardHeight * NAME_FONT));
+        nameText.setFont(Font.font(null, FontWeight.NORMAL, cardHeight * CURRENCY_FONT));
         nameText.setFill(Color.web(NAME_TEXT));
         nameText.setX(sideMargin);
         nameText.setY(headerBottom + cardHeight * NAME_BASELINE);
 
+        currencyText.setFont(Font.font(null, FontWeight.EXTRA_BOLD, cardHeight * AMOUNT_FONT));
+        currencyText.setFill(Color.web(CURRENCY_TEXT));
+        currencyText.setX(sideMargin);
+        currencyText.setY(headerBottom + cardHeight * AMOUNT_BASELINE);
+
         amountText.setFont(Font.font(null, FontWeight.EXTRA_BOLD, cardHeight * AMOUNT_FONT));
         amountText.setFill(Color.web(AMOUNT_TEXT));
-        amountText.setX(sideMargin);
         amountText.setY(headerBottom + cardHeight * AMOUNT_BASELINE);
 
-        currencyText.setFont(Font.font(null, FontWeight.NORMAL, cardHeight * CURRENCY_FONT));
-        currencyText.setFill(Color.web(CURRENCY_TEXT));
-        currencyText.setY(headerBottom + cardHeight * (AMOUNT_BASELINE - CURRENCY_LIFT));
-
-        return new Pane(nameText, amountText, currencyText);
+        return new Pane(nameText, currencyText, amountText);
     }
 
-    /** Places the currency code just after the amount, which changes width as the amount changes. */
+    /** Places the amount just after the leading currency code, which changes width by currency. */
     private void layoutCurrency() {
-        currencyText.setX(sideMargin + amountText.getLayoutBounds().getWidth() + cardWidth * 0.036);
+        amountText.setX(sideMargin + currencyText.getLayoutBounds().getWidth() + cardWidth * 0.02);
     }
 
     /** Full-bleed dashed rule, one QR margin above the QR. */

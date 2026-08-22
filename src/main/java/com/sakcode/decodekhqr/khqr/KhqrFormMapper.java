@@ -15,6 +15,11 @@ public final class KhqrFormMapper {
     private KhqrFormMapper() {
     }
 
+    /** Strips the thousands-separator formatting applied to the input box; the SDK rejects it. */
+    private static String unformatAmount(String amountText) {
+        return amountText.replace(",", "").trim();
+    }
+
     public static IndividualInfo toIndividualInfo(KhqrFormFields fields, Currency currency) {
         IndividualInfo individualInfo = new IndividualInfo();
         individualInfo.setAccountInformation(fields.accountInformationInput().getText());
@@ -30,7 +35,7 @@ public final class KhqrFormMapper {
         String amountText = fields.transactionAmountInput().getText();
         if (StringUtils.isNotBlank(amountText)) {
             individualInfo.setExpirationTimestamp(Timestamps.tenMinutesFromNowMillis());
-            individualInfo.setAmount(Double.parseDouble(amountText));
+            individualInfo.setAmount(Double.parseDouble(unformatAmount(amountText)));
         }
         if (StringUtils.isNotBlank(fields.billNumberInput().getText())) {
             individualInfo.setBillNumber(fields.billNumberInput().getText());
@@ -56,7 +61,7 @@ public final class KhqrFormMapper {
         }
         String amountText = fields.transactionAmountInput().getText();
         if (StringUtils.isNotBlank(amountText)) {
-            merchantInfo.setAmount(Double.parseDouble(amountText));
+            merchantInfo.setAmount(Double.parseDouble(unformatAmount(amountText)));
             merchantInfo.setExpirationTimestamp(Timestamps.tenMinutesFromNowMillis());
         }
         if (StringUtils.isNotBlank(fields.mobileNumberInput().getText())) {

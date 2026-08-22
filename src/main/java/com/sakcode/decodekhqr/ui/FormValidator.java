@@ -56,7 +56,7 @@ public final class FormValidator {
 
     private static boolean isNumeric(String text) {
         try {
-            Double.parseDouble(text);
+            Double.parseDouble(text.replace(",", "").trim());
             return true;
         } catch (NumberFormatException e) {
             return false;
