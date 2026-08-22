@@ -1,5 +1,7 @@
 # KHQR Tool
 
+[![Release](https://github.com/samreachyan/khqr-tool/actions/workflows/release.yml/badge.svg)](https://github.com/samreachyan/khqr-tool/actions/workflows/release.yml)
+
 A JavaFX desktop application for generating and decoding [Bakong KHQR](https://bakong.nbc.gov.kh/) codes, with a branded QR card preview built to the official KHQR Card Appearance Guideline.
 
 ## Key Features
@@ -38,6 +40,16 @@ The releases aren't code-signed with a paid Apple Developer ID, so Gatekeeper bl
   ```
 
 After the first successful open, macOS remembers your choice and future launches work normally.
+
+### Build verification
+
+Every release is built by the [Release workflow](.github/workflows/release.yml) from a tagged commit on `main`, and each installer is:
+
+- **Malware-scanned with ClamAV** before it's attached to the release.
+- **Checksummed** — a `.sha256` file ships alongside each installer.
+- **Compiled with a [Gradle Build Scan](https://scans.gradle.com/)** — a full report of the build that produced it (tasks, dependencies, warnings).
+
+The scan result, checksum, and Build Scan link for each installer are listed in that release's notes on the [Releases page](https://github.com/samreachyan/khqr-tool/releases).
 
 ## System Requirements
 
@@ -128,6 +140,8 @@ The shadow JAR bundles all runtime dependencies (Bakong KHQR SDK, ZXing, Jackson
 
 This depends on `shadowJar` and needs the JavaFX SDK's platform-specific module JARs present in `lib/` (already checked into this project for `mac-aarch64`). For other platforms, add the equivalent `jpackage` task to `build.gradle` with that platform's JavaFX module JARs.
 
+Both `packageMacApp` and the CI-facing `jpackageInstaller` task pass `--resource-dir packaging/macos`, which overrides jpackage's default `Info.plist` template. That's what declares `NSCameraUsageDescription` — without it, macOS silently denies the app camera access (no permission prompt at all) instead of asking the user. Edit `packaging/macos/Info.plist` to change the camera permission text or add other `NS*UsageDescription` entries (microphone, etc.); keep the `DEPLOY_*` tokens as-is, jpackage substitutes them at build time.
+
 ## Customization
 
 ### Application icon and title
@@ -148,6 +162,7 @@ Edit `src/main/java/com/sakcode/decodekhqr/ui/FormDefaults.java` to change what 
 1. **"Module not found" / JavaFX errors when running the jar directly** — run via `./gradlew run` (which wires the JavaFX module path for you), or add `--module-path`/`--add-modules` flags matching the JavaFX SDK version used to build.
 2. **`packageMacApp` fails: missing JavaFX module jars** — ensure the four `javafx-*-21-mac-aarch64.jar` files exist under `lib/`, matching your CPU architecture.
 3. **Decoding a QR image fails** — the ZXing reader needs a QR code with a clean quiet zone; heavily compressed or cropped screenshots can fail to decode.
+4. **"Unable to open camera" on Linux** — Linux has no app-level camera permission prompt like macOS; access is gated by Unix group membership on `/dev/video0`. Run `sudo usermod -aG video $USER`, then log out and back in. Also check no other app already has the camera open.
 
 ## Contributing
 

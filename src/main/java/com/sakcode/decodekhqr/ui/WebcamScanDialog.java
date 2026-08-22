@@ -47,7 +47,7 @@ public final class WebcamScanDialog {
     public Optional<String> showAndWait(Window owner) {
         VideoCapture capture = new VideoCapture();
         if (!capture.open(0)) {
-            showErrorAlert(owner, "Unable to open camera.\nCheck permissions in System Settings > Privacy & Security > Camera.");
+            showErrorAlert(owner, "Unable to open camera.\n" + cameraPermissionHint());
             return Optional.empty();
         }
 
@@ -156,6 +156,24 @@ public final class WebcamScanDialog {
         }
         pw.setPixels(0, 0, width, height, javafx.scene.image.PixelFormat.getIntArgbInstance(), pixels, 0, width);
         return image;
+    }
+
+    /**
+     * The camera device can fail to open for different reasons per OS, so points the user at
+     * the right fix: macOS gates it behind a Privacy setting, Linux behind {@code video} group
+     * membership on {@code /dev/video0} (there's no OS permission prompt to grant on Linux).
+     */
+    private static String cameraPermissionHint() {
+        String os = System.getProperty("os.name", "").toLowerCase();
+        if (os.contains("mac")) {
+            return "Check permissions in System Settings > Privacy & Security > Camera.";
+        }
+        if (os.contains("linux")) {
+            return "Your user may not have access to the camera device. Try:\n"
+                    + "sudo usermod -aG video $USER\n"
+                    + "then log out and back in, and check no other app is using the camera.";
+        }
+        return "Check that no other application is using the camera and that access permissions allow it.";
     }
 
     private void showErrorAlert(Window owner, String message) {
