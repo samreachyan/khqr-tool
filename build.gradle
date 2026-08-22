@@ -51,7 +51,7 @@ test {
 
 // Configure the run task for development
 run {
-    def iconPath = file('src/main/resources/icon_64.png').absolutePath
+    def iconPath = file('src/main/resources/app_icon.png').absolutePath
     // Add JavaFX modules to module path
     jvmArgs = [
             '--module-path', "${System.getProperty('java.home')}/lib",
@@ -111,7 +111,7 @@ task packageMacApp(type: Exec) {
 
     def appName    = 'KHQR-Tool'
     def jarFile    = shadowJar.archiveFile.get().asFile
-    def iconFile   = file('src/main/resources/icon_1024.icns')
+    def iconFile   = file('src/main/resources/app_icon.icns')
     def destDir    = file("${buildDir}/dist")
 
     // JavaFX SDK module JARs — must be on the module path (not classpath)
